@@ -15,7 +15,7 @@ Complex
 Files/modules below require explicit human approval before any agent touches them:
 
 - [ ] Vendor score internals: the vendor model module may only be reached through its score + three reason codes API; downstream code never reads inside it
-- [ ] Canonical behavioural-data schema (documented contract the validation layer depends on, so it can later run on other models)
+- [ ] Behavioural-data schema (documented, with a fixed seed so every result can be reproduced)
 - [ ] Approved reason-code list and policy text used by the Layer 4 agent
 - [ ] checks/approved/ and MANIFEST.sha256
 

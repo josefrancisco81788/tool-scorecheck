@@ -4,7 +4,7 @@
 
 ## Architecture map (seed)
 
-Layer 1 seeded synthetic panel generator (households x 24 months, latent creditworthiness factor) -> canonical schema -> Layer 2 vendor black-box GBM behind a score API plus in-house challenger (monotonic GBM and points scorecard) in shadow mode, outcomes-ownership experiment, champion/challenger decision report -> Layer 3 validation pack / evidence kit (metrics + PDF) -> Layer 4 constrained LLM agent drafting decline explanations and credit memos, scored on a harness. Layers 2-3 run end to end from one command.
+Layer 1 seeded synthetic panel generator (households x 24 months, latent creditworthiness factor) -> documented schema -> Layer 2 vendor black-box GBM behind a score API plus in-house challenger (monotonic GBM and points scorecard) in shadow mode, outcomes-ownership experiment, champion/challenger decision report -> Layer 3 validation pack (metrics + PDF) -> Layer 4 constrained LLM agent drafting decline explanations and credit memos, scored on a harness. Layers 2-3 run end to end from one command.
 
 ## Open architectural decisions
 

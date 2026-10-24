@@ -9,7 +9,7 @@ Status values: `Not started`, `Checks in draft`, `Checks locked`, `In progress`,
 Status: Not started
 
 Requirements:
-- Given a seed and generator config, when the panel generator runs, then it writes about 200,000 households over 24 months of electricity, mobile and e-wallet records in the canonical schema, driven by one latent creditworthiness factor with known default labels and Philippine data quirks (shared accounts, multiple SIMs, mostly prepaid, remittance spikes), and the same seed reproduces identical output
+- Given a seed and generator config, when the panel generator runs, then it writes about 200,000 households over 24 months of electricity, mobile and e-wallet records in the documented schema, driven by one latent creditworthiness factor with known default labels and Philippine data quirks (shared accounts, multiple SIMs, mostly prepaid, remittance spikes), and the same seed reproduces identical output
 
 Checks: not written
 
@@ -54,7 +54,7 @@ Checks: not written
 Status: Not started
 
 Requirements:
-- Given scores and outcomes for both models, including a simulated year-two shift (new lender channel, El Nino shock to rural incomes, telco pricing change), when the evidence kit runs, then it reports ranking performance overall and by segment, calibration by segment, PSI and characteristic-level drift, reject inference, fairness checks with a proxy-risk note, and approval and loss trade-off curves at several cut-offs, and renders them as a PDF
+- Given scores and outcomes for both models, including a simulated year-two shift (new lender channel, El Nino shock to rural incomes, telco pricing change), when the validation pack is generated, then it reports ranking performance overall and by segment, calibration by segment, PSI and characteristic-level drift, reject inference, fairness checks with a proxy-risk note, and approval and loss trade-off curves at several cut-offs, and renders them as a PDF
 
 Checks: not written
 
