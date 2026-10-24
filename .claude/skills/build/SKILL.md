@@ -24,6 +24,7 @@ Copy this checklist and keep it updated:
 - [ ] Locked checks pass and `python scripts/verify_checks.py` passes
 - [ ] Completeness confirmed (the user-facing behavior exists and is wired in)
 - [ ] Results recorded
+- [ ] Project-context updated in both skill copies
 - [ ] Auto-loop reviewed results before the next feature
 
 If a review or check fails, return to the step that produces that artifact. Do not mark the feature complete while a step is failed.
@@ -40,7 +41,7 @@ Use the write-checks skill. Checks land in `checks/draft/` only.
 
 ### 3. Human review — low freedom
 
-Stop and show the checks in plain language. Ask whether they cover what the user cares about. Wait for an answer.
+Stop and show the checks in plain language, including the Executable tests table and any test kind marked "not applicable" with its reason. Ask whether they cover what the user cares about. Wait for an answer.
 
 If the user changes a requirement, update `features.md`, revise the draft, and review again.
 
@@ -72,7 +73,13 @@ Do not carry earlier features' conversation into that context.
 
 The feature is complete only when both are true:
 
-- every locked check for it passes, and `python scripts/verify_checks.py` exits 0
+- every locked check for it passes, shown by the test output in its results file, and `python scripts/verify_checks.py` exits 0
 - completeness holds: a person can do the thing the feature describes, and it is connected to the app
 
-Update `features.md` status to `Complete` and point at the results folder. Then use the auto-loop skill before starting another feature.
+Run the test command and `python scripts/verify_checks.py` yourself rather than relying on the feature builder's report.
+
+Update `features.md` status to `Complete` and point at the results folder.
+
+Update the project-context skill's `references/project.md` with what this feature settled: the test command, where new modules live, dependencies added, conventions adopted, and any change to architecture or non-goals. Make the identical edit in both `.claude/skills/` and `.cursor/skills/`. If nothing changed, say so in the results file.
+
+Then use the auto-loop skill before starting another feature.

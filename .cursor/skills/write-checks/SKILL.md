@@ -19,7 +19,8 @@ Produce the evaluation for one feature before any product code is written. The i
 2. Write `checks/draft/<feature-id>.md` from the template. Use the feature's zero-padded id, for example `feature-001.md`.
 3. Cover the requirement itself, the integration that makes it real, and a regression check if the feature changes behavior the app already has.
 4. Include a completeness check: the user-facing behavior exists, separate from the rule behind it.
-5. Stop. Do not implement the feature. Do not edit `checks/approved/`. Do not run `scripts/lock_checks.py` here; the build skill does that after the human approves.
+5. Fill the Executable tests section. Name every automated test that will prove the Behavior checks: its file, what it asserts with any tolerance as a number, and which check it proves. Name the test command, or say the feature creates it. Follow `docs/testing-standards.md` for which kinds of test are required; mark a kind "not applicable" only with a stated reason, for the human to approve. A Behavior check that no test proves either gets a test or is reworded so a person can observe it.
+6. Stop. Do not implement the feature. Do not edit `checks/approved/`. Do not run `scripts/lock_checks.py` here; the build skill does that after the human approves.
 
 ## When a draft is rejected
 

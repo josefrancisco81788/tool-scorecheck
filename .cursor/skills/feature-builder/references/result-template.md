@@ -12,6 +12,14 @@ Status: kept | undone
 
 `verify_checks.py`: pass | fail
 
+## Test run
+
+Command: `<test command>`
+
+```text
+<pasted output, including the pass/fail counts>
+```
+
 ## Failure
 
 <what went wrong; "none" if everything passed>

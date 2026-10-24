@@ -27,6 +27,8 @@ Implement one locked feature. Start from this skill, `program.md`, the project-c
 Copy and update:
 
 - [ ] `python scripts/verify_checks.py` passes before you change product code
+- [ ] The test command named in the approved checks runs. If the checks say the feature creates it, set it up first
+- [ ] Every test in the approved check file's Executable tests table is written, and each one fails for the reason the table predicts, before any product code for it exists
 - [ ] Implement one coherent attempt
 - [ ] Run the project's tests and compare behavior to the approved checks
 - [ ] Write `results/<feature-id>/round-NNN.md`
@@ -38,6 +40,12 @@ Copy and update:
 If `verify_checks.py` fails, stop immediately. The checks or the manifest changed. Ask the human. Do not edit checks and do not refresh the manifest to make the failure go away.
 
 If a check fails because the check is wrong, or because the requirement was never written down, stop and say so. That is an evaluation problem for the human, not a prompt to weaken the check.
+
+## Tests
+
+The Executable tests table in the approved check file is part of the evaluation. Write those tests as the table describes them. Never loosen a tolerance, skip, mark as expected-to-fail, or delete a listed test to make it pass. If a listed test is wrong, stop and say so, the same as for a wrong check. You may add tests beyond the table.
+
+Mark a check as passing only when a test that proves it was seen passing in this round, or, for completeness, when you watched the behavior happen. Reading the code is not evidence. Paste the test output into the round's results file.
 
 ## Completeness
 
