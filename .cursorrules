@@ -1,0 +1,25 @@
+# .cursorrules — Tool - ScoreCheck
+
+Scope constraints (hard boundaries — never cross without explicit human sign-off):
+
+- Consumer borrowers only (thin-file individuals and households); no MSME or firm-level scoring
+- Synthetic data plus one public dataset only; no CreditBPO code, data, clients or methods beyond published general practice
+- No Kayana, Maya or Trusting Social data or internals; the vendor score is a simulated black box and they are never named as partners or users
+- Never claim the in-house model beats any real vendor; the write-up claims a decision method, not a verdict on a named company
+- The Layer 4 agent may only use approved reason codes and policy text, must never invent a figure or reason, and is review-only (a human signs every decline)
+- Governance mappings (EU AI Act, RA 10173, RA 9510, BSP circulars) must be checked against source text, never written from memory
+
+Non-goals (see scope.template.md for the full list — do not implement these without a scope change):
+
+- MSME or firm-level credit scoring
+- Any real vendor, lender or telco data
+- A verdict on whether a named company's score is good or bad
+- Autonomous credit decisions; the agent never issues a decline without a human
+- Training foundation models
+
+General:
+- Read docs/PRD.md and docs/design.md before making structural changes.
+- Do not touch anything listed as an Immutable Zone in CLAUDE.md.
+- Tests are required alongside implementation, not after — see docs/testing-standards.md.
+- Follow .cursor/rules/agent-loop.mdc. Do not edit checks/approved or the check scripts.
+- Use the build skill for feature work. One feature at a time, checks locked before code.

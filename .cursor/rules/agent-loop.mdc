@@ -1,0 +1,15 @@
+---
+description: Locked evaluation and one-feature build loop
+alwaysApply: true
+---
+
+# Agent loop
+
+- Build one feature at a time. The unit of work is a feature in `features.md`.
+- Write checks before implementation. The user approves them. Then lock with `python scripts/lock_checks.py` and commit `checks/approved/`.
+- Do not create or edit files in `checks/approved/`. Do not edit `scripts/lock_checks.py`, `scripts/verify_checks.py`, or `scripts/refresh_check_manifest.py`.
+- Run `python scripts/verify_checks.py` before implementation rounds and before calling a feature done. If it fails, stop and ask the user.
+- Run `python scripts/refresh_check_manifest.py` only when the user explicitly says they changed an approved check.
+- Locked checks passing is one gate. Also confirm the user-facing behavior exists and is wired into the app.
+- Record every round under `results/<feature-id>/`.
+- Recurring mistakes become confirmed rules under `program.md` Learned rules. They never become edits to approved checks.
