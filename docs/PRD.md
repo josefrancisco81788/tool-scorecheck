@@ -7,7 +7,7 @@
 - What this system does: ScoreCheck is an open testbed for the lender's side of an alternative-data consumer credit score: it generates a synthetic Philippine behavioural panel, runs an in-house challenger in shadow mode beside a simulated black-box vendor score, and measures how the value of the model depends on who keeps the repayment outcomes. It produces a validation pack (ranking, calibration, drift, reject inference, fairness) that lets a lender or regulator see how either score behaves, plus a constrained, review-only LLM layer that drafts decline explanations from approved reason codes.
 - Immutable Zones:
   - Vendor score internals: the vendor model module may only be reached through its score + three reason codes API; downstream code never reads inside it
-  - Canonical behavioural-data schema (shared with CTRL+RISK; changes must stay compatible)
+  - Canonical behavioural-data schema (documented contract the validation layer depends on, so it can later run on other models)
   - Approved reason-code list and policy text used by the Layer 4 agent
   - checks/approved/ and MANIFEST.sha256
 - Architecture map seed: Layer 1 seeded synthetic panel generator (households x 24 months, latent creditworthiness factor) -> canonical schema -> Layer 2 vendor black-box GBM behind a score API plus in-house challenger (monotonic GBM and points scorecard) in shadow mode, outcomes-ownership experiment, champion/challenger decision report -> Layer 3 validation pack / evidence kit (metrics + PDF) -> Layer 4 constrained LLM agent drafting decline explanations and credit memos, scored on a harness. Layers 2-3 run end to end from one command.
@@ -60,8 +60,8 @@ Non-Goals
 
 - Tech stack: Python 3 with pandas and numpy for the panel, scikit-learn plus a GBM library with monotonic constraints (TODO confirm LightGBM or XGBoost) for vendor and challenger, a points-scorecard implementation, an LLM API for Layer 4, and a PDF report generator (TODO confirm)
 - Data flow: Seeded generator -> panel in canonical schema -> vendor model (behind score API) and challenger models score the same applicants -> outcomes fed back per regime over 24 months -> evidence kit computes metrics and renders validation pack PDF -> Layer 4 agent reads score + reason codes + policy text and drafts explanation for human review
-- Integration points: Vendor score API (score + three reason codes only); LLM API for Layer 4; one public credit dataset (Home Credit Default Risk or Give Me Some Credit, licence to be checked); canonical schema shared with CTRL+RISK
-- Interface / schema contracts: Canonical behavioural-data schema shared with CTRL+RISK; vendor score API returns exactly a score and three reason codes; approved reason-code list and policy text for the agent; generator output is deterministic for a given seed
+- Integration points: Vendor score API (score + three reason codes only); LLM API for Layer 4; one public credit dataset (Home Credit Default Risk or Give Me Some Credit, licence to be checked)
+- Interface / schema contracts: Documented canonical behavioural-data schema; vendor score API returns exactly a score and three reason codes; approved reason-code list and policy text for the agent; generator output is deterministic for a given seed
 
 ## 4. Source Control & Repo Hygiene
 

@@ -25,9 +25,9 @@ Layer 1 seeded synthetic panel generator (households x 24 months, latent creditw
 
 Data flow: Seeded generator -> panel in canonical schema -> vendor model (behind score API) and challenger models score the same applicants -> outcomes fed back per regime over 24 months -> evidence kit computes metrics and renders validation pack PDF -> Layer 4 agent reads score + reason codes + policy text and drafts explanation for human review
 
-Integration points: Vendor score API (score + three reason codes only); LLM API for Layer 4; one public credit dataset (Home Credit Default Risk or Give Me Some Credit, licence to be checked); canonical schema shared with CTRL+RISK
+Integration points: Vendor score API (score + three reason codes only); LLM API for Layer 4; one public credit dataset (Home Credit Default Risk or Give Me Some Credit, licence to be checked)
 
-Interface contracts: Canonical behavioural-data schema shared with CTRL+RISK; vendor score API returns exactly a score and three reason codes; approved reason-code list and policy text for the agent; generator output is deterministic for a given seed
+Interface contracts: Documented canonical behavioural-data schema; vendor score API returns exactly a score and three reason codes; approved reason-code list and policy text for the agent; generator output is deterministic for a given seed
 
 ## Stack and dependencies
 
@@ -53,7 +53,7 @@ Do not assume other packages, CLIs, env vars, or services exist unless they are 
 ### Immutable zones
 
 - Vendor score internals: the vendor model module may only be reached through its score + three reason codes API; downstream code never reads inside it
-- Canonical behavioural-data schema (shared with CTRL+RISK; changes must stay compatible)
+- Canonical behavioural-data schema (documented contract the validation layer depends on, so it can later run on other models)
 - Approved reason-code list and policy text used by the Layer 4 agent
 - checks/approved/ and MANIFEST.sha256
 
