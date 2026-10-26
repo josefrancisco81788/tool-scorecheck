@@ -15,4 +15,5 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["tests"]
+addopts = "--import-mode=importlib"
 markers = ["integration: generates the 50,000-household default run"]
