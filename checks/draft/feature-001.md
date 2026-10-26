@@ -12,21 +12,28 @@ A "300-household run" and a "2,000-household run" mean `panel.generate(SEED, n, 
 
 The "eight tables" are `household`, `person`, `sim`, `electricity_account`, `ewallet_account`, `month_behaviour`, `ground_truth`, and `application_features`.
 
+The "read-back frame" is `application_features.parquet` read from the run directory after `features.from_panel` returns. Checks that name it assert on that file, not on the returned object.
+
 "Calendar month" of a panel month is `((month - 1) mod 12) + 1`. Month 1 is January, so months 4 and 16 are April and months 12 and 24 are December.
 
 "Origination rows" are the `ground_truth` rows whose `month` equals that person's `origination_month`. There is one per person. "Pre-origination months" are a person's `month_behaviour` rows whose `month` is less than that person's `origination_month`.
 
-"Spearman" is the Spearman rank correlation with average ranks for ties. "Residual of Y on X" is Y minus the fitted value of an ordinary least squares regression of Y on X with an intercept.
+"Spearman" is the Spearman rank correlation with average ranks for ties. A Spearman value that is NaN or infinite fails the check that uses it.
+
+"Rank residual of Y on X" is computed on the origination rows in four steps. Replace each value of Y and of every X by its rank, using average ranks for ties. Fit an ordinary least squares regression of ranked Y on the ranked X columns with an intercept. Subtract the fitted value from ranked Y. Round that residual to 6 decimal places. A rounded rank residual with fewer than 2 distinct values fails the check that uses it, where `-0.0` and `0.0` count as one value.
 
 ### Logical hash
 
 The logical hash of a table is computed from the table's values, not from Parquet bytes. Any two implementations of these steps give the same digest.
 
-1. Cast each column by its name. Every column ending in `_id`, plus `month`, `origination_month`, `age_years`, `operator_slot`, `dependents`, `open_credit_count`, `delinquency_count_30`, `delinquency_count_60`, `delinquency_count_90`, `history_months`, `sim_count`, `electricity_disconnect_count`, `default_label`, `label_observed`, `true_default`, `prepaid_flag`, `shared_account_flag`, `prepaid`, `shared`, `remittance_receiver`, `region_month_shock`, and `post_origination_shock`, becomes int64. Booleans become 1 and 0. `region`, `urban_rural`, `income_band`, `role`, `electricity_state`, `gender`, `education`, and `marital_status` become UTF-8 strings. Every other column becomes float64 and is rounded to 6 decimal places.
-2. Sort the columns by name in Unicode code-point order.
-3. Sort the rows by the cast values of those columns, in that column order, ascending. Nulls sort last.
-4. Serialize as CSV with a header row, comma separator, and `\n` after every line, including the last. Write no index. Write a null as the token `<NA>`. Write a float with exactly 6 digits after the decimal point. Quote a field only if it holds a comma, a double quote, or a newline, using RFC 4180 double-quote escaping.
-5. Take the SHA-256 of those bytes, encoded as UTF-8. The hash is the lowercase hex digest.
+1. Check the id columns. Every column ending in `_id` must be a non-null int64 column. If one is not, the hash is not computed and the test that asked for it fails.
+2. Cast each other column by its name. `month`, `origination_month`, `age_years`, `operator_slot`, `dependents`, `open_credit_count`, `delinquency_count_30`, `delinquency_count_60`, `delinquency_count_90`, `history_months`, `sim_count`, `electricity_disconnect_count`, `default_label`, `label_observed`, `true_default`, `prepaid_flag`, `shared_account_flag`, `prepaid`, `shared`, `remittance_receiver`, `region_month_shock`, and `post_origination_shock` become int64. Booleans become 1 and 0. `region`, `urban_rural`, `income_band`, `role`, `electricity_state`, `gender`, `education`, and `marital_status` become UTF-8 strings. Every other column becomes float64. A NaN in any column is a null.
+3. Sort the columns by name in Unicode code-point order.
+4. Sort the rows by the cast values of those columns, in that column order, ascending. Strings compare in Unicode code-point order. Nulls sort last.
+5. Serialize as CSV with a header row, comma separator, and `\n` after every line, including the last. Write no index. Write a null as the token `<NA>`. Write a float as the text `format(value, '.6f')`, where `value` is the float64 from step 2. That text is the rounding, so no separate round function is called. The text `-0.000000` is written as `0.000000`. Quote a field only if it holds a comma, a double quote, or a newline, using RFC 4180 double-quote escaping.
+6. Take the SHA-256 of those bytes, encoded as UTF-8. The hash is the lowercase hex digest.
+
+A float change smaller than 0.0000005 does not have to change the hash, because it may not change the 6-decimal text.
 
 Worked example. This table, in any row or column order:
 
@@ -91,25 +98,31 @@ and its logical hash is `492c75a4c990cada69f18ffcaabb27d2e53edd18a5ddf87e19491ba
 
 - [ ] B21. On a 2,000-household run, the share of `sim` rows with `prepaid` true is within 0.02 of 0.96.
 - [ ] B22. On a 2,000-household run, the `sim` row count divided by the `person` row count is between 1.3 and 2.5 inclusive, and at least one person has two or more `sim` rows.
-- [ ] B23. On a 2,000-household run, among persons in households with `remittance_receiver` true, mean `wallet_inflow` over December rows is greater than mean `wallet_inflow` over April rows.
-- [ ] B24. On a 2,000-household run, the share of `month_behaviour` rows whose `electricity_state` is `disconnected_restored_30d` or `unpaid_past_30d` is within 0.03 of 0.05. The share with `on_time` is greater than 0.5. All four states appear.
-- [ ] B25. On a 2,000-household run, `shared` true and `shared` false each appear on at least 20 `electricity_account` rows and on at least 20 `ewallet_account` rows.
+- [ ] B23. On a 2,000-household run, the share of `month_behaviour` rows whose `electricity_state` is `disconnected_restored_30d` or `unpaid_past_30d` is within 0.03 of 0.05. The share with `on_time` is greater than 0.5. All four states appear.
+- [ ] B24. On a 2,000-household run, `shared` true and `shared` false each appear on at least 20 `electricity_account` rows and on at least 20 `ewallet_account` rows.
 
 ### Drivers
 
-- [ ] B26. On the origination rows of a 2,000-household run, Spearman(`ability`, `true_default`) < 0 and Spearman(`willingness`, `true_default`) < 0.
-- [ ] B27. On the origination rows of a 2,000-household run, Spearman(residual of `ability` on `willingness`, `true_default`) < 0 and Spearman(residual of `willingness` on `ability`, `true_default`) < 0.
-- [ ] B28. On the origination rows of a 2,000-household run, Spearman(residual of `vendor_signal` on `ability` and `willingness`, `true_default`) > 0.
+- [ ] B25. On the origination rows of a 2,000-household run, Spearman(`ability`, `true_default`) is finite and < 0, and Spearman(`willingness`, `true_default`) is finite and < 0.
+- [ ] B26. On the origination rows of a 2,000-household run, at least 30 rows have `true_default` 1 and at least 30 rows have `true_default` 0.
+- [ ] B27. On the origination rows of a 2,000-household run, the rank residual of `ability` on `willingness` has at least 2 distinct values, and its Spearman with `true_default` is finite and < 0.
+- [ ] B28. On the origination rows of a 2,000-household run, the rank residual of `willingness` on `ability` has at least 2 distinct values, and its Spearman with `true_default` is finite and < 0.
+- [ ] B29. On the origination rows of a 2,000-household run, the rank residual of `vendor_signal` on `ability` and `willingness` has at least 2 distinct values, and its Spearman with `true_default` is finite and > 0.
+- [ ] B30. On a 2,000-household run, "receivers" are persons in households with `remittance_receiver` true and "non-receivers" are all other persons. December means use rows with calendar month 12 and April means use rows with calendar month 4. Means of `ability` and `willingness` are over `ground_truth` rows, and means of `wallet_inflow` are over `month_behaviour` rows. Every April mean used as a ratio denominator is finite and > 0. All four of these hold:
+  - Receivers' December mean `ability` is greater than their April mean `ability`.
+  - Receivers' December-to-April ratio of mean `ability` is greater than their December-to-April ratio of mean `willingness`.
+  - The absolute difference between 1 and the non-receivers' December-to-April ratio of mean `wallet_inflow` is less than the absolute difference between 1 and the receivers' ratio.
+  - Receivers' December mean `wallet_inflow` is greater than their April mean `wallet_inflow`.
 
 ### `application_features` from `features.from_panel`
 
-- [ ] B29. `features.from_panel` on a run directory returns `application_features` and writes it as `application_features.parquet` in that directory. On a 300-household run, its column set equals these 31 names exactly, so `origination_month` is not among them:
+- [ ] B31. `features.from_panel` on a run directory returns `application_features` and writes it as `application_features.parquet` in that directory. On a 300-household run, its column set equals these 31 names exactly, so `origination_month` is not among them:
   - Core: `application_id`, `person_id`, `age_years`, `income`, `dependents`, `credit_amount`, `installment_to_income`, `utilization`, `open_credit_count`, `delinquency_count_30`, `delinquency_count_60`, `delinquency_count_90`, `history_months`, `on_time_rate`, `payment_to_obligation_ratio`, `gender`, `education`, `marital_status`, `region`, `default_label`, `label_observed`
   - Vendor-only: `external_score_1`, `external_score_2`, `external_score_3`
   - Alternative-data: `sim_count`, `prepaid_flag`, `electricity_late_rate`, `electricity_disconnect_count`, `remittance_inflow_mean`, `ewallet_net_flow_mean`, `shared_account_flag`
-- [ ] B30. On a 300-household run, `features.from_panel` returns one row per person. `application_id` and `person_id` each have zero duplicates, and the set of `person_id` values equals the set in `person`.
-- [ ] B31. On a 300-household run, `features.from_panel` returns `label_observed` equal to 1 on every row, and `default_label` equal to that person's `true_default` on their origination row.
-- [ ] B32. On a 300-household run, each alternative-data value returned by `features.from_panel` equals the value the test recomputes from the detail tables, after both are rounded to 6 decimal places:
+- [ ] B32. On a 300-household run, the logical hash of the read-back frame equals the logical hash of the frame `features.from_panel` returned. The read-back frame has one row per person. `application_id` and `person_id` each have zero duplicates, and the set of `person_id` values equals the set in `person`.
+- [ ] B33. On the read-back frame of a 300-household run, `label_observed` equals 1 on every row, and `default_label` equals that person's `true_default` on their origination row.
+- [ ] B34. On the read-back frame of a 300-household run, each alternative-data value is within an absolute tolerance of 1e-6 of the value the test recomputes from the detail tables:
   - `sim_count` is the count of the person's `sim` rows.
   - `prepaid_flag` is 1 if the person's `sim` row with the lowest `sim_id` has `prepaid` true, else 0.
   - `electricity_late_rate` is the share of pre-origination months whose `electricity_state` is not `on_time`.
@@ -117,29 +130,30 @@ and its logical hash is `492c75a4c990cada69f18ffcaabb27d2e53edd18a5ddf87e19491ba
   - `remittance_inflow_mean` is the mean `wallet_inflow` over pre-origination months.
   - `ewallet_net_flow_mean` is the mean of `wallet_inflow` minus `wallet_outflow` over pre-origination months.
   - `shared_account_flag` is 1 if the person's household has any `electricity_account` or `ewallet_account` row with `shared` true, else 0.
-- [ ] B33. On a 300-household run, changing every `month_behaviour` row whose `month` is at or after the person's `origination_month`, then running `features.from_panel` again, leaves the logical hash of `application_features` unchanged.
-- [ ] B34. On a 300-household run, `features.from_panel` returns `external_score_1`, `external_score_2`, and `external_score_3` null on every row.
-- [ ] B35. On a 300-household run, `age_years`, `income`, `utilization`, and `delinquency_count_30` returned by `features.from_panel` have zero nulls and at least two distinct values each. `history_months` has a minimum of at most 3 and a maximum of at least 12. A quantile match against Home Credit waits until the Home Credit file is summarized, and these checks omit it on purpose.
-- [ ] B36. On a 300-household run, no `ground_truth` column other than `person_id` appears in `application_features`.
+- [ ] B35. On a 300-household run, the test records the logical hash of `application_features` and then edits the run directory. On every `month_behaviour` row with `month` >= that person's `origination_month`, it sets `electricity_state` to one of the four allowed states that differs from the row's current value, and adds 1 to `topup_amount`, `wallet_inflow`, and `wallet_outflow`. On every `ground_truth` row with `month` > that person's `origination_month`, it adds 1 to `ability`, `willingness`, and `vendor_signal`, and flips `region_month_shock`, `post_origination_shock`, and `true_default`. It does not change any origination row. It writes `month_behaviour.parquet` and `ground_truth.parquet` back and runs `features.from_panel` on that directory. The logical hash of the returned `application_features` and of the read-back frame each equal the recorded hash.
+- [ ] B36. On the read-back frame of a 300-household run, `external_score_1`, `external_score_2`, and `external_score_3` are null on every row.
+- [ ] B37. On the read-back frame of a 300-household run, `age_years` equals `person.age_years` for that `person_id` on every row, and `region` equals the `region` of the person's household on every row.
+- [ ] B38. On the read-back frame of a 300-household run, every core column from B31 has zero nulls. Every core column other than `label_observed` has at least two distinct values, and categorical columns count distinct strings. `label_observed` is exempt from the distinct-value rule because B33 requires it to be 1 on every row. `history_months` has a minimum of at most 3 and a maximum of at least 12. A quantile match against Home Credit waits until the Home Credit file is summarized, and these checks omit it on purpose.
+- [ ] B39. On a 300-household run, no `ground_truth` column other than `person_id` appears in `application_features`.
 
 ### Consumer scope
 
-- [ ] B37. On a 300-household run, no name of the eight tables, no column name in them, and no `person.role` value matches the case-insensitive pattern `firm|msme|business|enterprise|company`.
+- [ ] B40. On a 300-household run, no name of the eight tables, no column name in them, and no `person.role` value matches the case-insensitive pattern `firm|msme|business|enterprise|company`.
 
 ### Reproducibility
 
-- [ ] B38. Two 300-household runs with the same seed and config, each in its own process, one with `PYTHONHASHSEED=0` and one with `PYTHONHASHSEED=1`, each writing to a distinct output directory, give equal logical hashes for all eight tables.
-- [ ] B39. A 300-household run with seed `SEED + 1` gives a different logical hash from the `SEED` run for `ground_truth` and for `application_features`.
-- [ ] B40. The logical hash of a table from a 300-household run does not change when its rows are shuffled, when its columns are reordered, or after a Parquet write and read. Changing one cell changes it. The hash of the worked-example table above equals the stated digest.
-- [ ] B41. `tests/fixtures/golden/` holds the seed, a household count between 200 and 500, and the expected logical hash of each of the eight tables. A fresh run with that seed and count matches all eight hashes exactly. The test fails, and does not skip, when the fixture is missing.
+- [ ] B41. Two 300-household runs with the same seed and config, each in its own process, one with `PYTHONHASHSEED=0` and one with `PYTHONHASHSEED=1`, each writing to a distinct output directory, give equal logical hashes for all eight tables.
+- [ ] B42. A 300-household run with seed `SEED + 1` gives a different logical hash from the `SEED` run for `ground_truth` and for `application_features`.
+- [ ] B43. The logical hash of a table from a 300-household run does not change when its rows are shuffled, when its columns are reordered, or after a Parquet write and read. Changing one cell so that its serialized text changes also changes the hash. A float change smaller than 0.0000005 does not have to change it. The hash of the worked-example table above equals the stated digest.
+- [ ] B44. `tests/fixtures/golden/` holds the seed, a household count between 200 and 500, and the expected logical hash of each of the eight tables. A fresh run with that seed and count matches all eight hashes exactly. The test fails, and does not skip, when the fixture is missing.
 
-The two-process hash in B38 is the proof of reproducibility. A text scan of the source for `np.random.seed` is not evidence of it, so these checks have none.
+The two-process hash in B41 is the proof of reproducibility. A text scan of the source for `np.random.seed` is not evidence of it, so these checks have none.
 
 ### CLI
 
-- [ ] B42. The `python -m scorecheck` argument parser accepts `--scale default` and `--scale full`, and uses `default` when the flag is absent. `default` resolves to `SCALE_DEFAULT` households and `full` resolves to `SCALE_FULL` households.
-- [ ] B43. `python -m scorecheck --scale` with any value other than `default` or `full` exits non-zero and creates no file or directory under `data/processed`.
-- [ ] B44. `python -m scorecheck` with no flag exits 0. The first stdout line equals the default banner from B2. After the first line, stdout has one line that equals each of `vendor`, `models`, `experiment`, `report`, `validate`, and `explain`. The run directory under `data/processed` holds `household.parquet` with 50,000 rows, and its `run_config.json` has `scale` equal to `default` and `n_households` equal to 50000.
+- [ ] B45. The `python -m scorecheck` argument parser accepts `--scale default` and `--scale full`, and uses `default` when the flag is absent. `default` resolves to `SCALE_DEFAULT` households and `full` resolves to `SCALE_FULL` households.
+- [ ] B46. `python -m scorecheck --scale` with any value other than `default` or `full` exits non-zero and creates no file or directory under `data/processed`.
+- [ ] B47. `python -m scorecheck` with no flag exits 0. The first stdout line equals the default banner from B2. After the first line, stdout has one line that equals each of `vendor`, `models`, `experiment`, `report`, `validate`, and `explain`. The run directory under `data/processed` holds all eight Parquet files of the eight tables. Its `household.parquet` has 50,000 rows, its `application_features.parquet` row count equals its `person.parquet` row count, and its `run_config.json` has `scale` equal to `default` and `n_households` equal to 50000.
 
 ## Executable tests
 
@@ -169,38 +183,41 @@ Test command: none yet. The feature creates it and records it in `docs/testing-s
 | test_shock_columns | tests/unit/test_ground_truth.py | On a 300-household run, `region_month_shock` and `post_origination_shock` are boolean, and each takes both true and false. | B18 |
 | test_no_shock_before_origination | tests/unit/test_ground_truth.py | On a 300-household run, `post_origination_shock` is false on every row with `month` less than that person's `origination_month`. | B19 |
 | test_true_default_absorbing | tests/unit/test_ground_truth.py | On a 300-household run, every `true_default` is 0 or 1. Zero persons have a 1 at month t followed by a 0 at a later month. | B20 |
-| test_prepaid_share | tests/evals/test_panel_distributions.py | On a 2,000-household run, the share of `sim` rows with `prepaid` true is within 0.02 of 0.96. | B21 |
-| test_sims_per_person | tests/evals/test_panel_distributions.py | On a 2,000-household run, `sim` rows divided by `person` rows is between 1.3 and 2.5 inclusive. At least one person has two or more `sim` rows. | B22 |
-| test_remittance_december_over_april | tests/evals/test_panel_distributions.py | On a 2,000-household run, among persons in `remittance_receiver` households, mean `wallet_inflow` on December rows is greater than on April rows. | B23 |
-| test_electricity_state_shares | tests/evals/test_panel_distributions.py | On a 2,000-household run, the share of rows in {`disconnected_restored_30d`, `unpaid_past_30d`} is within 0.03 of 0.05. The `on_time` share is greater than 0.5. All four states appear. | B24 |
-| test_shared_account_counts | tests/evals/test_panel_distributions.py | On a 2,000-household run, `shared` true and `shared` false each appear on at least 20 rows of `electricity_account` and at least 20 rows of `ewallet_account`. | B25 |
-| test_driver_signs | tests/evals/test_panel_distributions.py | On the origination rows of a 2,000-household run, Spearman(`ability`, `true_default`) < 0 and Spearman(`willingness`, `true_default`) < 0. | B26 |
-| test_driver_residuals | tests/evals/test_panel_distributions.py | On the origination rows of a 2,000-household run, Spearman(residual of `ability` on `willingness`, `true_default`) < 0 and Spearman(residual of `willingness` on `ability`, `true_default`) < 0. | B27 |
-| test_vendor_signal_residual | tests/evals/test_panel_distributions.py | On the origination rows of a 2,000-household run, Spearman(residual of `vendor_signal` on `ability` and `willingness`, `true_default`) > 0. | B28 |
-| test_feature_columns | tests/unit/test_features.py | On a 300-household run, `features.from_panel` writes `application_features.parquet` in the run directory, and the returned column set equals the 31 names in B29 exactly. | B29 |
-| test_one_row_per_person | tests/unit/test_features.py | On a 300-household run, zero duplicates in `application_id` and in `person_id`. The `person_id` set equals the `person` set. | B30 |
-| test_labels_at_origination | tests/unit/test_features.py | On a 300-household run, `label_observed` is 1 on every row. `default_label` equals `true_default` on each person's origination row. | B31 |
-| test_alt_data_recomputed | tests/unit/test_features.py | On a 300-household run, each of the seven alternative-data columns equals the B32 recomputation from the detail tables, after both are rounded to 6 decimal places. | B32 |
-| test_post_origination_invariance | tests/unit/test_features.py | On a 300-household run, changing every `month_behaviour` row at or after `origination_month` and running `features.from_panel` again leaves the `application_features` logical hash unchanged. | B33 |
-| test_vendor_columns_null | tests/unit/test_features.py | On a 300-household run, `external_score_1`, `external_score_2`, and `external_score_3` are null on every returned row. | B34 |
-| test_core_columns | tests/unit/test_features.py | On a 300-household run, `age_years`, `income`, `utilization`, and `delinquency_count_30` have zero nulls and at least two distinct values each. `history_months` minimum is at most 3 and maximum is at least 12. | B35 |
-| test_no_ground_truth_leak | tests/unit/test_features.py | On a 300-household run, the `application_features` columns share no name with `ground_truth` except `person_id`. | B36 |
-| test_no_firm_entities | tests/unit/test_scope.py | On a 300-household run, zero table names, column names, or `person.role` values in the eight tables match `firm\|msme\|business\|enterprise\|company`, case-insensitive. | B37 |
-| test_same_seed_same_hash | tests/unit/test_reproducibility.py | Two subprocess runs at 300 households, `PYTHONHASHSEED=0` and `PYTHONHASHSEED=1`, distinct output directories, give equal logical hashes for all eight tables. | B38 |
-| test_second_seed_differs | tests/unit/test_reproducibility.py | At 300 households, seed `SEED + 1` gives a different logical hash from `SEED` for `ground_truth` and for `application_features`. | B39 |
-| test_hash_is_logical | tests/unit/test_reproducibility.py | On a 300-household run, shuffling rows, reordering columns, and a Parquet write and read leave each table's hash unchanged. Changing one cell changes it. The worked-example table hashes to `492c75a4c990cada69f18ffcaabb27d2e53edd18a5ddf87e19491ba7aba584b2`. | B40 |
-| test_golden_panel | tests/unit/test_golden_panel.py | The fixture in `tests/fixtures/golden/` exists, and its household count is between 200 and 500. A fresh run with its seed and count matches all eight stored hashes exactly. A missing fixture fails the test. | B41 |
-| test_scale_flag | tests/unit/test_cli.py | The parser maps no flag and `--scale default` to `SCALE_DEFAULT`, and `--scale full` to `SCALE_FULL`. | B42 |
-| test_bad_scale_writes_nothing | tests/unit/test_cli.py | `python -m scorecheck --scale bogus` exits non-zero. The listing of `data/processed` is the same before and after. | B43 |
-| test_cli_default_run | tests/integration/test_cli_run.py | `python -m scorecheck` with no flag, in a subprocess with a 600-second timeout, exits 0. Stdout line 1 equals the default banner. After line 1, one line equals each of `vendor`, `models`, `experiment`, `report`, `validate`, and `explain`. The run directory has `household.parquet` with 50,000 rows and `run_config.json` with `scale` equal to `default` and `n_households` equal to 50000. | B44, Completeness |
+| test_prepaid_share | tests/unit/test_panel_distributions.py | On a 2,000-household run, the share of `sim` rows with `prepaid` true is within 0.02 of 0.96. | B21 |
+| test_sims_per_person | tests/unit/test_panel_distributions.py | On a 2,000-household run, `sim` rows divided by `person` rows is between 1.3 and 2.5 inclusive. At least one person has two or more `sim` rows. | B22 |
+| test_electricity_state_shares | tests/unit/test_panel_distributions.py | On a 2,000-household run, the share of rows in {`disconnected_restored_30d`, `unpaid_past_30d`} is within 0.03 of 0.05. The `on_time` share is greater than 0.5. All four states appear. | B23 |
+| test_shared_account_counts | tests/unit/test_panel_distributions.py | On a 2,000-household run, `shared` true and `shared` false each appear on at least 20 rows of `electricity_account` and at least 20 rows of `ewallet_account`. | B24 |
+| test_driver_signs | tests/unit/test_panel_drivers.py | On the origination rows of a 2,000-household run, Spearman(`ability`, `true_default`) is finite and < 0. Spearman(`willingness`, `true_default`) is finite and < 0. | B25 |
+| test_default_class_counts | tests/unit/test_panel_drivers.py | On the origination rows of a 2,000-household run, at least 30 rows have `true_default` 1 and at least 30 rows have `true_default` 0. | B26 |
+| test_ability_rank_residual | tests/unit/test_panel_drivers.py | On the origination rows of a 2,000-household run, the rank residual of `ability` on `willingness`, rounded to 6 decimals, has at least 2 distinct values. Its Spearman with `true_default` is finite and < 0. | B27 |
+| test_willingness_rank_residual | tests/unit/test_panel_drivers.py | On the origination rows of a 2,000-household run, the rank residual of `willingness` on `ability`, rounded to 6 decimals, has at least 2 distinct values. Its Spearman with `true_default` is finite and < 0. | B28 |
+| test_vendor_signal_rank_residual | tests/unit/test_panel_drivers.py | On the origination rows of a 2,000-household run, the rank residual of `vendor_signal` on `ability` and `willingness`, rounded to 6 decimals, has at least 2 distinct values. Its Spearman with `true_default` is finite and > 0. | B29 |
+| test_calendar_split | tests/unit/test_panel_drivers.py | On a 2,000-household run, every April mean used as a denominator is finite and > 0. Receivers' December mean `ability` is greater than their April mean. Receivers' December-to-April ratio of mean `ability` is greater than their ratio of mean `willingness`. The non-receivers' December-to-April ratio of mean `wallet_inflow` is closer to 1 than the receivers' ratio. Receivers' December mean `wallet_inflow` is greater than their April mean. | B30 |
+| test_feature_columns | tests/unit/test_features.py | On a 300-household run, `features.from_panel` writes `application_features.parquet` in the run directory, and the returned column set equals the 31 names in B31 exactly. | B31 |
+| test_features_file_matches_return | tests/unit/test_features.py | On a 300-household run, the read-back frame's logical hash equals the returned frame's logical hash. The read-back frame has zero duplicates in `application_id` and in `person_id`, and its `person_id` set equals the `person` set. | B32 |
+| test_labels_at_origination | tests/unit/test_features.py | On the read-back frame of a 300-household run, `label_observed` is 1 on every row. `default_label` equals `true_default` on each person's origination row. | B33 |
+| test_alt_data_recomputed | tests/unit/test_features.py | On the read-back frame of a 300-household run, each of the seven alternative-data columns is within an absolute tolerance of 1e-6 of the B34 recomputation from the detail tables. | B34 |
+| test_post_origination_invariance | tests/unit/test_features.py | On a 300-household run, the B35 edits to `month_behaviour` rows with `month` >= `origination_month` and to `ground_truth` rows with `month` > `origination_month` are written back, and `features.from_panel` runs again. The returned frame and the read-back frame each have the logical hash recorded before the edits. | B35 |
+| test_vendor_columns_null | tests/unit/test_features.py | On the read-back frame of a 300-household run, `external_score_1`, `external_score_2`, and `external_score_3` are null on every row. | B36 |
+| test_detail_ties | tests/unit/test_features.py | On the read-back frame of a 300-household run, `age_years` equals `person.age_years` for each `person_id`, and `region` equals the `region` of the person's household, on every row. | B37 |
+| test_core_columns | tests/unit/test_features.py | On the read-back frame of a 300-household run, every core column has zero nulls. Every core column other than `label_observed` has at least two distinct values, counting distinct strings for categorical columns. `history_months` minimum is at most 3 and maximum is at least 12. | B38 |
+| test_no_ground_truth_leak | tests/unit/test_features.py | On a 300-household run, the `application_features` columns share no name with `ground_truth` except `person_id`. | B39 |
+| test_no_firm_entities | tests/unit/test_scope.py | On a 300-household run, zero table names, column names, or `person.role` values in the eight tables match `firm\|msme\|business\|enterprise\|company`, case-insensitive. | B40 |
+| test_same_seed_same_hash | tests/unit/test_reproducibility.py | Two subprocess runs at 300 households, `PYTHONHASHSEED=0` and `PYTHONHASHSEED=1`, distinct output directories, give equal logical hashes for all eight tables. | B41 |
+| test_second_seed_differs | tests/unit/test_reproducibility.py | At 300 households, seed `SEED + 1` gives a different logical hash from `SEED` for `ground_truth` and for `application_features`. | B42 |
+| test_hash_is_logical | tests/unit/test_reproducibility.py | On a 300-household run, shuffling rows, reordering columns, and a Parquet write and read leave each table's hash unchanged. Changing one cell so that its serialized text changes changes the hash. The worked-example table hashes to `492c75a4c990cada69f18ffcaabb27d2e53edd18a5ddf87e19491ba7aba584b2`. | B43 |
+| test_golden_panel | tests/unit/test_golden_panel.py | The fixture in `tests/fixtures/golden/` exists, and its household count is between 200 and 500. A fresh run with its seed and count matches all eight stored hashes exactly. A missing fixture fails the test. | B44 |
+| test_scale_flag | tests/unit/test_cli.py | The parser maps no flag and `--scale default` to `SCALE_DEFAULT`, and `--scale full` to `SCALE_FULL`. | B45 |
+| test_bad_scale_writes_nothing | tests/unit/test_cli.py | `python -m scorecheck --scale bogus` exits non-zero. The listing of `data/processed` is the same before and after. | B46 |
+| test_cli_default_run | tests/integration/test_cli_run.py | `python -m scorecheck` with no flag, in a subprocess with a 600-second timeout, exits 0. Stdout line 1 equals the default banner. After line 1, one line equals each of `vendor`, `models`, `experiment`, `report`, `validate`, and `explain`. The run directory holds all eight Parquet files. `household.parquet` has 50,000 rows. `application_features.parquet` has as many rows as `person.parquet`. `run_config.json` has `scale` equal to `default` and `n_households` equal to 50000. | B47, Completeness |
 
 No test generates 200,000 rows. The full scale is checked through `SCALE_FULL`, the full banner, and the `--scale full` parser mapping.
 
 Required kinds, per `docs/testing-standards.md`:
 
-- Unit: the `tests/unit/` rows above. They cover config, schema, keys, ground truth, `application_features`, hashes, the golden fixture, and the CLI parser.
+- Unit: the `tests/unit/` rows above. They cover config, schema, keys, ground truth, the Philippine distributions, the drivers, `application_features`, hashes, the golden fixture, and the CLI parser. Every behavior check is proved by a blocking unit or integration test.
 - Golden dataset: `test_golden_panel`. The feature builder writes the fixture in this feature, after the other panel tests pass. This commit does not add it. Any later change to a stored hash needs a changelog line that says why it changed.
-- Eval case: `tests/evals/test_panel_distributions.py`, holding the distribution checks B21 to B28. Eval scores are advisory until v1, per `docs/testing-standards.md`. The cases still exist and run.
+- Eval case: `tests/evals/test_panel_distributions.py` calls the same assertion functions as `tests/unit/test_panel_distributions.py` and `tests/unit/test_panel_drivers.py`. Its scores are advisory until v1, per `docs/testing-standards.md`. It proves no check on its own.
 - Integration: `test_cli_default_run`, in the integration suite, not the unit suite.
 - Coverage: `src/scorecheck/panel/` and `src/scorecheck/features/` have at least 80% line coverage under the unit suite.
 
