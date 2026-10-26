@@ -10,8 +10,9 @@ from scorecheck._streams import Streams
 from scorecheck.panel import _behaviour, _population, _truth
 from scorecheck.panel._grid import PersonMonth, PersonMonthGrid
 from scorecheck.panel._params import GeneratorParams
+from scorecheck.panel._view import OriginationView, read_at_origination
 
-__all__ = ["generate"]
+__all__ = ["generate", "read_at_origination", "OriginationView"]
 
 
 def generate(

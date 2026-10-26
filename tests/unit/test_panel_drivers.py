@@ -1,13 +1,13 @@
 import numpy as np
 
-from scorecheck import config, panel
+from scorecheck import config
 from scorecheck.logical_hash import logical_hash
 from support import panel_assertions as pa
-from support.runs import PanelRun
+from support.runs import PanelRun, generate_run
 
 
 def _run(tmp_path_factory, label: str, **overrides) -> PanelRun:
-    return PanelRun(panel.generate(config.SEED, 2000, tmp_path_factory.mktemp(label), **overrides))
+    return generate_run(config.SEED, 2000, tmp_path_factory.mktemp(label), **overrides)
 
 
 def _labels(run: PanelRun) -> np.ndarray:

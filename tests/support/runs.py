@@ -3,6 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from scorecheck import features, panel
+
 PANEL_TABLE_NAMES = (
     "household", "person", "sim", "electricity_account", "ewallet_account", "month_behaviour", "ground_truth",
 )
@@ -26,3 +28,10 @@ class PanelRun:
         gt = self["ground_truth"].merge(self["person"][["person_id", "origination_month"]], on="person_id")
         rows = gt[gt["month"] == gt["origination_month"]]
         return rows.sort_values("person_id").reset_index(drop=True)
+
+
+def generate_run(seed: int, n_households: int, data_dir, **overrides) -> PanelRun:
+    """A run as the checks define it: panel.generate, then features.from_panel on its directory."""
+    run_dir = panel.generate(seed, n_households, data_dir, **overrides)
+    features.from_panel(run_dir)
+    return PanelRun(run_dir)
