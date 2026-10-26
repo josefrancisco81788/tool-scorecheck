@@ -56,21 +56,34 @@ def write_run(data_dir: Path, run: RunConfig, tables: Mapping[TableSpec, pd.Data
     """Write exactly PANEL_FILES into data_dir/<run id>/, replacing any earlier run with that id.
 
     Tables are staged in a dot-prefixed sibling and renamed into place. Windows cannot rename onto
-    an existing directory, so a previous run directory is removed first.
+    an existing directory, so a previous run is moved to a backup sibling first and deleted only
+    once the new run holds the final name. A failed write never leaves the stage behind, and a
+    failed rename restores the previous run.
     """
     if set(tables) != set(schema.PANEL_TABLES):
         raise ValueError("write_run needs exactly the seven panel tables")
     data_dir = Path(data_dir)
-    stage = data_dir / f".{run.run_id}.staging-{os.getpid()}"
-    shutil.rmtree(stage, ignore_errors=True)
-    stage.mkdir(parents=True)
-    for spec, frame in tables.items():
-        schema.conform(frame, spec).to_parquet(stage / spec.file_name, index=False)
-    (stage / RUN_CONFIG_FILE).write_text(run.to_json(), encoding="utf-8")
     final = data_dir / run.run_id
-    if final.exists():
-        shutil.rmtree(final)
-    os.replace(stage, final)
+    stage = data_dir / f".{run.run_id}.staging-{os.getpid()}"
+    backup = data_dir / f".{run.run_id}.previous-{os.getpid()}"
+    shutil.rmtree(stage, ignore_errors=True)
+    shutil.rmtree(backup, ignore_errors=True)
+    stage.mkdir(parents=True)
+    try:
+        for spec, frame in tables.items():
+            schema.conform(frame, spec).to_parquet(stage / spec.file_name, index=False)
+        (stage / RUN_CONFIG_FILE).write_text(run.to_json(), encoding="utf-8")
+        if final.exists():
+            os.replace(final, backup)
+        try:
+            os.replace(stage, final)
+        except BaseException:
+            if backup.exists():
+                os.replace(backup, final)
+            raise
+    finally:
+        shutil.rmtree(stage, ignore_errors=True)
+    shutil.rmtree(backup, ignore_errors=True)
     return final
 
 

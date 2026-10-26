@@ -29,6 +29,9 @@ def generate(
     """
     if isinstance(seed, bool) or not isinstance(seed, (int, np.integer)):
         raise TypeError(f"seed must be an int, got {type(seed).__name__}")
+    if isinstance(n_households, bool) or not isinstance(n_households, (int, np.integer)):
+        raise TypeError(f"n_households must be an int, got {type(n_households).__name__}")
+    n_households = int(n_households)
     if n_households < 1:
         raise ValueError("n_households must be at least 1")
 
@@ -47,7 +50,7 @@ def generate(
         ability=_parse_override(ability_override, grid, "ability_override"),
         willingness=_parse_override(willingness_override, grid, "willingness_override"),
     )
-    true_default = _truth.realise_default(traits, exo, params)
+    true_default = _truth.realise_default(traits, exo, grid, params)
     behaviour = _behaviour.draw(streams, pop, grid, traits, params)
 
     tables = {

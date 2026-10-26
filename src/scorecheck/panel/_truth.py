@@ -4,7 +4,7 @@ import numpy as np
 
 from scorecheck import config
 from scorecheck._streams import Streams
-from scorecheck.panel._grid import PersonMonth, PersonMonthGrid
+from scorecheck.panel._grid import PersonMonth, PersonMonthGrid, is_pre_origination
 from scorecheck.panel._params import GeneratorParams
 from scorecheck.panel._population import Population
 
@@ -74,8 +74,13 @@ def traits(
     )
 
 
-def realise_default(traits: Traits, exo: Exogenous, params: GeneratorParams) -> PersonMonth:
-    """Absorbing default from month 1, read only from the stored traits and the exogenous draws."""
+def realise_default(traits: Traits, exo: Exogenous, grid: PersonMonthGrid, params: GeneratorParams) -> PersonMonth:
+    """Absorbing default from each person's origination month, read only from the stored traits and
+    the exogenous draws.
+
+    The label is read on the origination row, so an event before origination would let a later
+    applicant carry more months of hazard and make history_months predict the label.
+    """
     t = params.tuning
     logit = (
         t.default_intercept
@@ -85,4 +90,5 @@ def realise_default(traits: Traits, exo: Exogenous, params: GeneratorParams) -> 
         + t.post_shock_weight * exo.post_origination_shock
     )
     event = exo.default_uniform < 1.0 / (1.0 + np.exp(-logit))
+    event &= ~is_pre_origination(grid.months[None, :], grid.origination_month[:, None])
     return np.maximum.accumulate(event, axis=1).astype(np.int64)

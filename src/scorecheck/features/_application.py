@@ -14,6 +14,25 @@ MARITAL_STATUS = ("single", "married", "widowed", "separated")
 MARITAL_SHARES = (0.40, 0.48, 0.06, 0.06)
 
 
+def _poisson(rng: np.random.Generator, lam: np.ndarray) -> np.ndarray:
+    """One uniform per person, inverted through the Poisson CDF.
+
+    Generator.poisson consumes a lambda-dependent number of uniforms, so one person's rate would
+    shift every later person's draw.
+    """
+    u = rng.random(len(lam))
+    k = np.zeros(len(lam), dtype=np.int64)
+    pmf = np.exp(-lam)
+    cdf = pmf.copy()
+    active = (u > cdf) & (pmf > 0)
+    while active.any():
+        k[active] += 1
+        pmf[active] *= lam[active] / k[active]
+        cdf[active] += pmf[active]
+        active = (u > cdf) & (pmf > 0)
+    return k
+
+
 def _alternative_data(view: OriginationView) -> pd.DataFrame:
     person_ids = view.person["person_id"]
     before = view.behaviour_before.assign(
@@ -73,9 +92,9 @@ def build(view: OriginationView, streams: Streams) -> pd.DataFrame:
         "installment_to_income": credit_amount / term / income,
         "utilization": np.clip(streams("utilization").beta(2.0, 5.0, n) + 0.4 * late_rate, 0.0, 1.0),
         "open_credit_count": streams("open_credit").poisson(1.0, n),
-        "delinquency_count_30": streams("delinquency_30").poisson(0.1 + 2.0 * late_rate),
-        "delinquency_count_60": streams("delinquency_60").poisson(0.05 + 1.0 * late_rate),
-        "delinquency_count_90": streams("delinquency_90").poisson(0.02 + 3.0 * disconnect_rate),
+        "delinquency_count_30": _poisson(streams("delinquency_30"), 0.1 + 2.0 * late_rate),
+        "delinquency_count_60": _poisson(streams("delinquency_60"), 0.05 + 1.0 * late_rate),
+        "delinquency_count_90": _poisson(streams("delinquency_90"), 0.02 + 3.0 * disconnect_rate),
         "history_months": months_before,
         "on_time_rate": np.clip(1.0 - late_rate + streams("on_time").normal(0.0, 0.05, n), 0.0, 1.0),
         "payment_to_obligation_ratio": streams("payment").lognormal(0.0, 0.2, n) * (1.0 - 0.5 * late_rate),
