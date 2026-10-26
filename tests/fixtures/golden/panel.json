@@ -1,0 +1,14 @@
+{
+  "seed": 20261024,
+  "n_households": 250,
+  "hashes": {
+    "household": "b44ca7f252f420ddab41bae8c35f7a2470dec2a12d14ffabfed2b977c2e82055",
+    "person": "19d0fcb6a173354fabf62bcc54e02c04937a00cb516115069b0e779af2c532be",
+    "sim": "f1e2388c894d78a0d697e656d8bdc7b8a63d2cb567256f871a6c82252b9bd044",
+    "electricity_account": "d57855a2ff3f4cc3cb6830a31c69f4c2abbc13d6fd68bc545bd07d02bf94e965",
+    "ewallet_account": "e362226c0898a3508cd028b60a434448c4b718db5f52421101a197350858249c",
+    "month_behaviour": "3eb02f52193c374f9b633e284273a344d1202401b7fe9f3ffd722369cb346727",
+    "ground_truth": "35ec8a4315e564444d95d3aed33abfcd24c1d97aba81d4cd1dc71c158adf7757",
+    "application_features": "d2ee9e0301141c0f6bda864b4fbf3a2ec2cc262c01f82b3f87b907f9a92cb7b5"
+  }
+}

@@ -58,6 +58,16 @@ The reviewing agent checks test coverage and eval results against this document 
 - CI blocking vs. advisory for this project: Unit tests, approved checks (verify_checks.py) and generator determinism tests block merge; eval harness scores and validation-pack metrics are advisory until v1.
 - Compliance flag: No
 
+Test commands, from the repo root after `pip install -r requirements.txt`:
+
+- Everything: `python -m pytest`
+- Unit suite, which blocks merge: `python -m pytest tests/unit`
+- Eval suite, advisory until v1: `python -m pytest tests/evals`
+- Integration suite, which runs the 50,000-household default command: `python -m pytest tests/integration`
+- Core-module coverage: `python -m pytest tests/unit --cov=scorecheck.panel --cov=scorecheck.features --cov-report=term-missing`
+
+Regenerate the golden panel with `python scripts/write_golden_panel.py`, and add a line to `tests/fixtures/golden/CHANGELOG.md` saying why any hash changed.
+
 Per-feature test needs (fill in as features move from MVP list to implementation):
 
 - Synthetic behavioural panel: unit test required; golden dataset required; eval case required
