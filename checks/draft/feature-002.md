@@ -42,6 +42,7 @@ No test generates 200,000 households. Only the integration test generates 50,000
 - [ ] C7. On a 300-household run, `vendor.score(run_dir, person_id)` with a `person_id` absent from `person` raises `KeyError`.
 - [ ] C8. On a 300-household run, `vendor.score(run_dir, person_id)` returns the same tuple for every `person_id` before and after the vendor stage on that run. Scores do not feed back into the vendor.
 - [ ] C9. Higher scores mean lower risk, the same orientation as `EXT_SOURCE_*` on Home Credit. On the scored frame of a 2,000-household run, Spearman(`external_score_1`, `default_label`) is finite and < 0.
+- [ ] C28. The vendor may train on the same persons it scores. It fits on the run directory passed to `vendor.score` or `vendor.write_scores`, and scores every person in that run, including the persons it trained on. Scores are in-sample. This feature locks no holdout, no separate vendor population, and no out-of-time split. Feature 004 owns holdout and refit. A reviewer confirms that no file this feature adds or changes calls the vendor score out-of-sample.
 
 ### Vendor stage and `application_features`
 
@@ -54,14 +55,14 @@ No test generates 200,000 households. Only the integration test generates 50,000
 
 ### Ground truth stays inside the vendor
 
-- [ ] C16. `src/scorecheck/cli.py` does not contain the text `ground_truth` or `GROUND_TRUTH`. `vendor.score` and `vendor.write_scores` take a run directory, and `vendor.score` also takes a `person_id`. Neither takes a frame or a ground-truth column.
+- [ ] C16. `src/scorecheck/cli.py` does not contain the text `ground_truth` or `GROUND_TRUTH`. `vendor.score` and `vendor.write_scores` take a run directory, and `vendor.score` also takes a `person_id`. Neither takes a frame or a ground-truth column. No `.py` file under `src/scorecheck/` contains the text `vendor_signal` unless it is under `src/scorecheck/vendor/` or `src/scorecheck/panel/`, or is `src/scorecheck/schema.py` or `src/scorecheck/config.py`. Outside the generator and the schema, only the vendor reads `vendor_signal`.
 - [ ] C17. On a 300-household run, the test records the logical hash of the scored frame. Each round copies the run directory's nine files into a fresh directory, applies one edit there, runs the vendor stage on the copy, and compares the logical hash of the copy's scored frame. For an edited numeric cell, the new value is `int.from_bytes(hashlib.sha256(f"{column}|{person_id}|{month}".encode("utf-8")).digest()[:4], "big")`. Each round fails if the edited column's multiset of values is unchanged. The invariance rounds are:
   - `ability`, `willingness`, and `vendor_signal`, each replaced with the per-cell value on `ground_truth` rows with `month` greater than that person's `origination_month`
   - `region_month_shock` and `post_origination_shock`, each flipped on `ground_truth` rows with `month` greater than that person's `origination_month`
   - `true_default` set to 1 on every `ground_truth` row with `month` greater than that person's `origination_month`. This round also fails unless the sum of `true_default` on those rows increases.
   - `topup_amount`, `wallet_inflow`, and `wallet_outflow`, each replaced with the per-cell value on `month_behaviour` rows with `month` greater than or equal to that person's `origination_month`
 
-  Each invariance round leaves the logical hash of the scored frame equal to the recorded hash. The control round replaces `vendor_signal` with the per-cell value on `ground_truth` rows with `month` less than or equal to that person's `origination_month`. The control round must change the logical hash of the scored frame. The vendor reads its private signal from ground truth, and reads nothing after origination.
+  Each invariance round leaves the logical hash of the scored frame equal to the recorded hash. The control round replaces `vendor_signal` with the per-cell value on `ground_truth` rows with `month` less than or equal to that person's `origination_month`. The control round must change the logical hash of the scored frame. The vendor reads `vendor_signal` on `ground_truth` rows at or before that person's `origination_month`, inside `src/scorecheck/vendor/` only. Edits after origination, to `vendor_signal` or any other column above, must not change the hash.
 
 ### Policy text stays out
 
@@ -82,8 +83,8 @@ No test generates 200,000 households. Only the integration test generates 50,000
 
 ### CLI
 
-- [ ] C26. `cli.main([])` with `config.SCALES` set so that `default` maps to 300 households, run in an empty working directory, returns 0. Its stdout lines equal exactly the default banner from Feature 001 B2, then `models`, `experiment`, `report`, `validate`, and `explain`, in that order. No stdout line equals `vendor`. `data/processed/<run id>/application_features.parquet` has `external_score_1` non-null on every row. `explain.draft` is not called.
-- [ ] C27. `python -m scorecheck` with no flag, in a subprocess with a 600-second timeout and an empty temporary working directory, exits 0. The first stdout line equals the default banner. After the first line, stdout has exactly one line equal to each of `models`, `experiment`, `report`, `validate`, and `explain`, and no line equal to `vendor`. Every Feature 001 B47 assertion other than the `vendor` stdout line still holds. `application_features.parquet` in the run directory has `external_score_1` non-null and between 0 and 1 inclusive on every row, and `external_score_2` and `external_score_3` null on every row.
+- [ ] C26. `cli.main([])` with `config.SCALES` set so that `default` maps to 300 households, run in an empty working directory, returns 0. Its stdout lines equal exactly the default banner from Feature 001 B2, then `vendor`, `models`, `experiment`, `report`, `validate`, and `explain`, in that order. `data/processed/<run id>/application_features.parquet` has `external_score_1` non-null on every row. `explain.draft` is not called.
+- [ ] C27. `python -m scorecheck` with no flag, in a subprocess with a 600-second timeout and an empty temporary working directory, exits 0. The first stdout line equals the default banner. The stdout lines after the first equal exactly `vendor`, `models`, `experiment`, `report`, `validate`, and `explain`, in that order. Every Feature 001 B47 assertion still holds, including the `vendor` stdout line. `application_features.parquet` in the run directory has `external_score_1` non-null and between 0 and 1 inclusive on every row, and `external_score_2` and `external_score_3` null on every row.
 
 ## Executable tests
 
@@ -108,7 +109,7 @@ Test command: `python -m pytest`, as recorded in `docs/testing-standards.md`. Co
 | test_stage_writes_no_new_file | tests/unit/test_vendor_stage.py | On a 300-household run, after the vendor stage the run directory's entries are exactly the eight Parquet files and `run_config.json`. | C13 |
 | test_stage_idempotent | tests/unit/test_vendor_stage.py | On a 300-household run, two vendor stages in a row give equal logical hashes of the scored frame. | C14 |
 | test_stage_returns_written_frame | tests/unit/test_vendor_stage.py | On a 300-household run, the logical hash of the frame `write_scores` returns equals the logical hash of the scored frame. | C15 |
-| test_cli_never_reads_ground_truth | tests/unit/test_vendor_api.py | `src/scorecheck/cli.py` contains neither `ground_truth` nor `GROUND_TRUTH`. `inspect.signature(vendor.score)` has exactly the parameters `run_dir` and `person_id`, and `inspect.signature(vendor.write_scores)` has exactly `run_dir`. | C16 |
+| test_cli_never_reads_ground_truth | tests/unit/test_vendor_api.py | `src/scorecheck/cli.py` contains neither `ground_truth` nor `GROUND_TRUTH`. `inspect.signature(vendor.score)` has exactly the parameters `run_dir` and `person_id`, and `inspect.signature(vendor.write_scores)` has exactly `run_dir`. Zero `.py` files under `src/scorecheck/` contain `vendor_signal`, other than files under `vendor/` or `panel/`, `schema.py`, and `config.py`. | C16 |
 | test_vendor_reads_only_application_time_truth | tests/unit/test_vendor_stage.py | The C17 rounds on a 300-household run, in-process, each on a fresh copy of the run directory. Every invariance round leaves the scored-frame hash unchanged and changes the edited column's multiset. The `true_default` round raises the post-origination `true_default` sum. The control round changes the scored-frame hash. | C17 |
 | test_draft_still_raises | tests/unit/test_cli.py | `explain.draft()` and `explain.draft("RC1", score=0.5)` each raise `RuntimeError`. `src/scorecheck/explain/` has `__init__.py` as its only `.py` file and no `policy` directory. | C18 |
 | test_no_firm_entities_after_vendor | tests/unit/test_scope.py | On a scored 300-household run, zero run-directory file names and zero scored-frame column names match `firm\|msme\|business\|enterprise\|company`, case-insensitive. | C20 |
@@ -116,38 +117,32 @@ Test command: `python -m pytest`, as recorded in `docs/testing-standards.md`. Co
 | test_scored_same_seed_same_hash | tests/unit/test_reproducibility.py | Two subprocess scored runs at 300 households, `PYTHONHASHSEED=0` and `PYTHONHASHSEED=1`, distinct output directories, give equal scored-frame logical hashes. | C23 |
 | test_scored_second_seed_differs | tests/unit/test_reproducibility.py | At 300 households, a scored run at `SEED + 1` gives a different scored-frame logical hash from `SEED`. | C24 |
 | test_golden_vendor | tests/unit/test_golden_vendor.py | `tests/fixtures/golden/vendor.json` exists with household count 300. A fresh scored run matches the stored scored-frame hash exactly, each stored score within 1e-12, and each stored reason-code triple exactly. A missing fixture fails the test. | C25 |
-| test_main_prints_banner_then_stages | tests/unit/test_cli.py | Existing test, updated. `config.SCALES` default set to 300. `cli.main([])` returns 0. Stdout lines equal `[banner, "models", "experiment", "report", "validate", "explain"]`. `external_score_1` is non-null on every row of the written `application_features.parquet`. `explain.draft` is patched to fail the test if called. | C26, Completeness |
-| test_cli_default_run | tests/integration/test_cli_run.py | Existing test, updated. Same 600-second subprocess run. After the banner, exactly one line equals each of the five skipped stages and none equals `vendor`. Every other Feature 001 B47 assertion is kept. `external_score_1` is non-null and in [0, 1] on every row. `external_score_2` and `external_score_3` are null on every row. | C27, Completeness |
+| test_main_prints_banner_then_stages | tests/unit/test_cli.py | Existing test, updated. `config.SCALES` default set to 300. `cli.main([])` returns 0. Stdout lines equal `[banner, "vendor", "models", "experiment", "report", "validate", "explain"]`. `external_score_1` is non-null on every row of the written `application_features.parquet`. `explain.draft` is patched to fail the test if called. | C26, Completeness |
+| test_cli_default_run | tests/integration/test_cli_run.py | Existing test, updated. Same 600-second subprocess run. The stdout lines after the banner equal `["vendor", "models", "experiment", "report", "validate", "explain"]` in order. Every Feature 001 B47 assertion is kept, including the `vendor` line. `external_score_1` is non-null and in [0, 1] on every row. `external_score_2` and `external_score_3` are null on every row. | C27, Completeness |
 
-C19 and C22 are reviewer checks on the diff. No test can prove the absence of a claim or of policy wording.
+C19, C22, and C28 are reviewer checks on the diff. No test can prove the absence of a claim or of policy wording.
 
 Required kinds, per `docs/testing-standards.md`:
 
 - Unit: the `tests/unit/` rows above. Fixtures that train the vendor are module-scoped so each test file trains at most once per household count.
 - Golden dataset: `test_golden_vendor`. The feature builder writes `tests/fixtures/golden/vendor.json` after the other vendor tests pass, with a script beside `scripts/write_golden_panel.py`, and adds a line to `tests/fixtures/golden/CHANGELOG.md`. This commit does not add the fixture.
-- Eval case: `tests/evals/test_vendor_ranking.py` records the AUC of `external_score_1` against `default_label` on a scored 2,000-household run, oriented so that higher score means lower risk, and asserts it is above 0.5. Advisory until v1. It proves no check on its own and is never compared against any challenger.
+- Eval case: `tests/evals/test_vendor_ranking.py` records the in-sample AUC of `external_score_1` against `default_label` on a scored 2,000-household run, oriented so that higher score means lower risk, and asserts it is above 0.5. Advisory until v1. It proves no check on its own and is never compared against any challenger.
 - Integration: `test_cli_default_run`, in the integration suite. It must still finish inside its 600-second timeout with the vendor stage included.
 - Coverage: `src/scorecheck/vendor/` has at least 80% line coverage under the unit suite.
 
 ## Integration
 
-- [ ] `python -m scorecheck` calls `vendor.write_scores` on the run directory after `features.from_panel`, in the same change that makes the behavior checks pass. `cli.STAGES` no longer lists `vendor`.
+- [ ] `python -m scorecheck` calls `vendor.write_scores` on the run directory after `features.from_panel` and before it prints the `vendor` line, in the same change that makes the behavior checks pass. The vendor stage runs on every default and full run.
 - [ ] The gradient-boosting library the vendor uses is listed in `requirements.txt` and in `pyproject.toml` dependencies, and is configured for single-threaded, seeded, deterministic fitting per `docs/design.md` section 2 Invariants.
-- [ ] `README.md` says the default command fills `external_score_1` with a simulated vendor score, and lists the five skipped stages. `docs/testing-standards.md` adds `--cov=scorecheck.vendor` to the coverage command.
+- [ ] `README.md` says the default command fills `external_score_1` with a simulated vendor score, and lists the six stage lines in order: `vendor`, `models`, `experiment`, `report`, `validate`, and `explain`. `docs/testing-standards.md` adds `--cov=scorecheck.vendor` to the coverage command.
 
 ## Regression
 
-- [ ] Feature 001 check B47 requires a stdout line equal to `vendor`. This feature removes that line on purpose. C27 replaces that one clause of B47, and every other B47 clause stands. `checks/approved/feature-001.md` is not edited by this draft. See open decision 1.
-- [ ] `features.from_panel` is unchanged. Feature 001 checks B31 to B39 still pass on the frame it returns, including B36 (`external_score_*` null), because the vendor stage runs after it as a separate step.
+- [ ] Feature 001 check B47 stands in full. This feature does not supersede any B47 clause. The `vendor` stdout line stays, and C26 and C27 keep it in its Feature 001 position after the banner and before `models`. `checks/approved/feature-001.md` is not edited.
+- [ ] `features.from_panel` is unchanged. It still leaves `external_score_1`, `external_score_2`, and `external_score_3` null on every row, so the locked B36 test `test_vendor_columns_null` keeps passing unchanged. Feature 001 checks B31 to B39 still pass on the frame it returns. The vendor stage, run after it as a separate step, is what fills `external_score_1`.
 - [ ] `test_golden_panel` passes with `tests/fixtures/golden/panel.json` unchanged and no new `CHANGELOG.md` line for it.
 - [ ] Every other Feature 001 test passes unchanged.
 
 ## Completeness
 
-- [ ] A person runs `python -m scorecheck` from the repo root after `pip install -r requirements.txt`. They see the default banner, then the five skipped stages without `vendor`. They open `data/processed/<run id>/application_features.parquet` and find `external_score_1` filled on every row. A passing unit test alone does not satisfy this check.
-
-## Open decisions for the reviewer
-
-1. Feature 001 B47 conflict. B47 is locked and still names the `vendor` line. Either the human amends B47 in `checks/approved/feature-001.md` and runs `python scripts/refresh_check_manifest.py`, or the human accepts that C27 supersedes that one clause. The draft assumes the second.
-2. Training population. `docs/design.md` says the vendor is trained "on the synthetic panel" and does not say which people. Training on the same people it scores gives the vendor in-sample labels, which flatters it in Feature 005. C17 only forbids reading anything after origination. The draft does not lock a holdout, a separate vendor population, or an out-of-time split. If the reviewer wants one, it needs its own check before the lock.
-3. Control round in C17. It requires that the vendor read `vendor_signal` at or before origination. The design says the vendor sees "the vendor signal's behavioural correlates that the challenger is denied". If the reviewer reads that as correlates only, and not the signal itself, the control round should edit those correlates instead.
+- [ ] A person runs `python -m scorecheck` from the repo root after `pip install -r requirements.txt`. They see the default banner, then `vendor`, `models`, `experiment`, `report`, `validate`, and `explain`. They open `data/processed/<run id>/application_features.parquet` and find `external_score_1` filled on every row. A passing unit test alone does not satisfy this check.
