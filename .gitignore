@@ -7,4 +7,9 @@ node_modules/
 dist/
 /build/
 data/raw/
+data/processed/
+.venv/
+*.egg-info/
+.pytest_cache/
+.coverage
 .DS_Store
