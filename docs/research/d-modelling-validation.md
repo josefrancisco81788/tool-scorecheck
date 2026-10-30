@@ -24,6 +24,8 @@ Confidence: `verified` for the dependency and the issue. "Use our own code" is t
 
 ScoreCheck: decision-tree or quantile pre-bins, pool adjacent bins that break the requested direction, weight of evidence with 0.5 smoothing, logistic regression, points scaled as `Factor = PDO / ln(2)` and `Offset = BasePoints - Factor * ln(BaseOdds)` (Siddiqi). Information value bands from the same source: under 0.02 unpredictive, 0.02–0.10 weak, 0.10–0.30 medium, 0.30–0.50 strong, above 0.50 check leakage. Those bands are industry rules of thumb.
 
+Status 30 Oct 2026: the decision is ten quantile bins, adjacent merge on the five monotone columns, points to double the odds 20, base points 600, base odds 50 goods to one bad. The sentence above is the proposal.
+
 ### What makes the outcomes experiment invalid
 
 The experiment is two regimes over the synthetic months. In one, repayment labels return only to the vendor arm. In the other, the data owner refits on those labels too. Learning curves are the vendor-minus-challenger gap against month.

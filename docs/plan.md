@@ -2,6 +2,8 @@
 
 Date: 2026-10-25. Research notes: [research/README.md](research/README.md). The PRD and the design doc are not edited here. Proposed PRD wording is listed so a later edit can apply it on purpose.
 
+Status 30 Oct 2026: the PRD and `features.md` now contain the 2026-10-25 wording. Keep this note as the historical plan.
+
 No step waits on another repo.
 
 ## Decisions made

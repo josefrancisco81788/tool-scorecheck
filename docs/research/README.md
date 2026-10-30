@@ -16,7 +16,7 @@ Access dates: 2026-10-24 for the first pass, 2026-10-25 for the Hugging Face fol
 
 ## Where this disagrees with the PRD
 
-Proposed edits are in [../plan.md](../plan.md). The PRD file is unchanged.
+Proposed edits are in [../plan.md](../plan.md). Status 30 Oct 2026: the PRD and `features.md` now contain the 2026-10-25 wording. Keep the disagreement list below as the historical record from this note.
 
 - The PRD points at Home Credit and Give Me Some Credit and then stops on licence. Licence is no longer the filter. Grain is. Home Credit is in. Give Me Some Credit is out of the pipeline.
 - The PRD's single latent factor becomes two traits plus shocks.

@@ -4,12 +4,12 @@
 
 ## Architecture map (seed)
 
-Layer 1 seeded synthetic panel generator (households x 24 months, latent creditworthiness factor) -> documented schema -> Layer 2 vendor black-box GBM behind a score API plus in-house challenger (monotonic GBM and points scorecard) in shadow mode, outcomes-ownership experiment, champion/challenger decision report -> Layer 3 validation pack (metrics + PDF) -> Layer 4 constrained LLM agent drafting decline explanations and credit memos, scored on a harness. Layers 2-3 run end to end from one command.
+Layer 1 seeded synthetic panel generator (ability, willingness, shocks, and a vendor-only signal; default 50,000 households × 24 months, full about 200,000) -> documented schema -> Layer 2 vendor black-box GBM behind a score API plus in-house challengers (LightGBM, XGBoost, and histogram gradient boosting, each unconstrained and, where supported, with a monotone refit, plus a points scorecard) in shadow mode, outcomes-ownership experiment, champion/challenger decision report -> Layer 3 validation pack (metrics + PDF) -> Layer 4 constrained LLM agent drafting decline explanations and credit memos, scored on a harness. Layers 2-3 run end to end from one command.
 
 ## Open architectural decisions
 
-- [ ] Fill in from `docs/design.md` §5 once the Design Doc is generated (Stage 2 — recommended via Claude Code Plan Mode against docs/PRD.md).
-- [ ] Lock the `application_features` column list from [docs/research/a-schema-reproducibility.md](docs/research/a-schema-reproducibility.md) when the design doc is written. The rule is decided; the list is the proposal.
+- [x] Fill in from `docs/design.md` §5 once the Design Doc is generated (Stage 2 — recommended via Claude Code Plan Mode against docs/PRD.md).
+- [x] Lock the `application_features` column list from [docs/research/a-schema-reproducibility.md](docs/research/a-schema-reproducibility.md) when the design doc is written. The rule is decided; the list is the proposal.
 - [ ] Confirm Home Credit row counts and table completeness when the files are first downloaded. The ten-minute command uses UCI 350 until that load is measured.
 - [ ] Re-check Claude API prices at Feature 007. Explanation does not gate earlier features.
 
@@ -25,3 +25,4 @@ Layer 1 seeded synthetic panel generator (households x 24 months, latent creditw
 | 2026-10-25 | Default panel 50,000 households, disclosed in the README, command output, and report header | 200,000 with monthly refits and a SIM-month frame will not meet ten minutes on a laptop. Full scale stays 200,000 | Always generate 200,000 |
 | 2026-10-25 | Two traits, shocks, and a vendor-only signal | One latent factor makes owning the outcomes uninformative. The Notion expected-finding sentence is a hypothesis, not a tuning target | Single latent factor |
 | 2026-10-25 | Explanation is a later function and does not constrain model class | Opaque boosters stay in the comparison. Feature 007 still uses approved reason codes, invents no figure, and waits for a human signature | Require monotone models or a scorecard so every score is narratable |
+| 2026-10-30 | Scorecard: ten quantile bins; PDO 20, base 600, odds 50; Python floor `>=3.12` at Feature 003 implement; hidden labels in an experiment table; regime refit outside `data/vendor/<run id>/` | Lock Feature 003 constants; keep Feature 001 `label_observed` = 1; preserve the locked two-file vendor ledger | Tree bins; keep Python 3.11 with an older XGBoost; rewrite `application_features`; second ledger inside `data/vendor/` |
