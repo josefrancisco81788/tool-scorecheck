@@ -58,6 +58,35 @@ def test_draft_raises():
         explain.draft()
 
 
+def test_command_order(tmp_path, monkeypatch):
+    from scorecheck import features, panel, vendor
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(config, "SCALES", {"default": 200, "full": 400})
+    order = []
+    real_generate = panel.generate
+    real_features = features.from_panel
+    real_publish = vendor.publish
+
+    def generate(*args, **kwargs):
+        order.append("panel.generate")
+        return real_generate(*args, **kwargs)
+
+    def from_panel(*args, **kwargs):
+        order.append("features.from_panel")
+        return real_features(*args, **kwargs)
+
+    def publish(*args, **kwargs):
+        order.append("vendor.publish")
+        return real_publish(*args, **kwargs)
+
+    monkeypatch.setattr(panel, "generate", generate)
+    monkeypatch.setattr(features, "from_panel", from_panel)
+    monkeypatch.setattr(vendor, "publish", publish)
+    assert cli.main([]) == 0
+    assert order == ["panel.generate", "features.from_panel", "vendor.publish"]
+
+
 def test_main_prints_banner_then_stages(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(config, "SCALES", {"default": 200, "full": 400})

@@ -15,7 +15,7 @@ Checks: locked in `checks/approved/feature-001.md`
 
 ## Feature 002 — Black-box vendor score API
 
-Status: Checks locked
+Status: Complete
 
 Requirements:
 - Given a vendor gradient-boosted model trained on the panel, when downstream code requests a score for an applicant, then it receives only a score and three reason codes, with no access to the model's internals
