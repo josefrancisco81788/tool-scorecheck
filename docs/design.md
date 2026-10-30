@@ -2,7 +2,7 @@
 
 > Filled 2026-10-26 from [PRD.md](PRD.md), [plan.md](plan.md), and [research/a-schema-reproducibility.md](research/a-schema-reproducibility.md). Decisions of 2026-10-25 in [../decisions.md](../decisions.md) override earlier wording in [../features.md](../features.md) where they differ. Checks for Feature 001 are drafted from this doc.
 
-`features.md` still says one latent factor, a single monotonic GBM, and about 200,000 households. This doc is the build contract until that file is updated: default scale 50,000, two traits plus shocks, three boosters plus a scorecard, Home Credit on the full command, and the Taiwan card file on the default command.
+`features.md` and the PRD now use this contract. Default scale is 50,000 households. Full scale is about 200,000. Drivers are ability, willingness, shocks, and a vendor-only signal. Challengers are three boosters plus a scorecard. Home Credit is the full command. UCI Default of Credit Card Clients (id 350) is the default command's public file.
 
 ---
 
@@ -155,7 +155,7 @@ Made decisions stay in [../decisions.md](../decisions.md). Still open:
 - [ ] Confirm Home Credit row counts and that all seven tables are present when the files are first downloaded. Until that load is measured, the ten-minute command uses the synthetic default panel plus UCI 350.
 - [ ] Re-quote BSP Circular 855 subsection numbers from the PDF when the model-risk note is written. The final number of the 2025 model-risk draft is unknown; cite the draft or omit a number.
 - [ ] Re-check Claude API prices at Feature 007, before any price is written into the repo.
-- [ ] Update [../features.md](../features.md) and [PRD.md](PRD.md) to the 2026-10-25 wording (50,000 default, two traits, three boosters, Home Credit plus UCI). This doc governs until that edit.
+- [x] Update [../features.md](../features.md) and [PRD.md](PRD.md) to the 2026-10-25 wording (50,000 default, two traits plus shocks, three boosters plus a scorecard, Home Credit on the full command, UCI 350 on the default command).
 
 ---
 
