@@ -68,11 +68,11 @@ One row per application. Synthetic rows and public rows use this column list and
 
 Core: `application_id`, `person_id`, `age_years`, `income`, `dependents`, `credit_amount`, `installment_to_income`, `utilization`, `open_credit_count`, `delinquency_count_30`, `delinquency_count_60`, `delinquency_count_90`, `history_months`, `on_time_rate`, `payment_to_obligation_ratio`, `gender`, `education`, `marital_status`, `region`, `default_label`, `label_observed`.
 
-Vendor-only, dropped before every challenger fit: `external_score_1`, `external_score_2`, `external_score_3`. On Home Credit these are `EXT_SOURCE_*`. On the synthetic panel, `external_score_1` is the vendor API score written back for the report. The drop is asserted by a test.
+Vendor-only, dropped before every challenger fit: `external_score_1`, `external_score_2`, `external_score_3`. On Home Credit these are `EXT_SOURCE_*`. On the synthetic panel the three columns stay null. The vendor probability is read through `vendor.score` and is not written back onto `application_features`. Research note A proposed that write-back. JOS-24 and the locked Feature 002 checks rejected it. The drop is asserted by a test.
 
 Alternative-data, null on every public row: `sim_count`, `prepaid_flag`, `electricity_late_rate`, `electricity_disconnect_count`, `remittance_inflow_mean`, `ewallet_net_flow_mean`, `shared_account_flag`.
 
-`label_observed` is 0 when the outcome is hidden. `history_months` is the thin-file versus thick-file cut.
+On `application_features`, Feature 001 writes `label_observed` 1 on every row, and `default_label` equals origination-month `true_default`. Feature 004 records hidden outcomes in `data/experiment/<run id>/outcomes.parquet`, keyed by application, checkpoint, and regime. A hidden row has `label_observed` 0 there and an empty matured label. Refits read that table. `application_features` is not rewritten, so the Feature 002 bind stays valid. Evaluation of people held out of the fit uses `ground_truth`. `history_months` is the thin-file versus thick-file cut.
 
 ### Scale
 
@@ -83,7 +83,7 @@ Alternative-data, null on every public row: `sim_count`, `prepaid_flag`, `electr
 - No column from `ground_truth` appears in `application_features` or in any challenger matrix.
 - Challenger fits do not receive `external_score_1`, `external_score_2`, or `external_score_3`.
 - Synthetic, Taiwan, and Home Credit frames are scored and reported separately.
-- The same seed and config produce the same logical hash. A second seed does not. Draws use `np.random.default_rng(seed)`. `PYTHONHASHSEED` is fixed at process start. LightGBM uses `deterministic=True`, a forced histogram direction, and `num_threads=1`. XGBoost uses `random_state` and `n_jobs=1`. The sklearn histogram booster uses `random_state`.
+- The same seed and config produce the same logical hash. A second seed does not. Draws use `scorecheck._streams.Streams`. `Streams` is the only caller of `np.random.default_rng` in `src/`. `PYTHONHASHSEED` is fixed at process start. LightGBM uses `deterministic=True`, a forced histogram direction, and `num_threads=1`. XGBoost uses `random_state` and `n_jobs=1`. The sklearn histogram booster uses `random_state`.
 - No firm or MSME entity is written.
 - A decline draft from `explain` cannot set an approval flag. A person signs it.
 - Adding a column to `application_features` is a schema change and needs an explicit decision before the code changes.
@@ -102,26 +102,28 @@ Alternative-data, null on every public row: `sim_count`, `prepaid_flag`, `electr
 
 ### Feature 002: Black-box vendor score API
 
-- Given: a gradient-boosted vendor model trained on the synthetic panel, including `external_score_*` and the vendor signal's behavioural correlates that the challenger is denied.
+- Given: a gradient-boosted vendor model trained on the synthetic panel. Origination-month `vendor_signal` is the only private input. `external_score_*` stay null and are not training columns. Age, gender, education, marital status, and region leave the matrix. `application_profile` is not a reason code.
 - Steps: 1) Training code lives under `vendor/` and is not re-exported. 2) `vendor.score` returns a float and exactly three reason codes. 3) A test imports `scorecheck.vendor` and asserts the booster object is not in the public namespace.
 - Satisfies: downstream code receives only a score and three reason codes.
 
 ### Feature 003: In-house challenger in shadow mode
 
 - Given: the same applicants the vendor scored.
-- Steps: 1) `features.challenger_matrix` drops `external_score_*`. 2) Fit LightGBM, XGBoost, and `HistGradientBoostingClassifier` unconstrained, plus a monotone refit on utilization, delinquency counts, and installment-to-income where the library supports it. 3) Fit the in-house weight-of-evidence scorecard (tree or quantile bins, adjacent merge, weight of evidence with 0.5 smoothing, logistic regression, points-to-double-the-odds). 4) Write all scores beside the vendor score. 5) Do not change the approval flag.
-- Satisfies: challengers run in shadow on the data owner's columns. All four lines are reported. `features.md` names only one monotonic GBM; this sequence is the decision.
+- Steps: 1) `features.challenger_matrix` drops `external_score_*` and the same five demographic columns the vendor matrix drops. 2) Fit LightGBM, XGBoost, and `HistGradientBoostingClassifier` unconstrained, plus a monotone refit on utilization, delinquency counts, and installment-to-income where the library supports it. 3) Fit the in-house weight-of-evidence scorecard: ten quantile bins, adjacent merge on the five monotone columns, weight of evidence with 0.5 smoothing, logistic regression, points to double the odds 20, base points 600, base odds 50 goods to one bad. 4) Write all scores beside the vendor score, in the challenger's own artifact. 5) Do not change the approval flag.
+- The scores file is an in-sample fit on a book where every `default_label` is observed. It is not the held-out vendor-versus-challenger gap. Feature 004 owns that gap. Booster scores are not stored as a golden hash.
+- When Feature 003 is implemented, `requires-python` becomes `>=3.12` because `xgboost==3.4.1` requires that floor. The pins stay in the Feature 003 draft until that implementation.
+- Satisfies: challengers run in shadow on the data owner's columns. All four lines are reported.
 
 ### Feature 004: Outcomes-ownership experiment
 
 - Given: 24 synthetic months and two regimes.
-- Steps: 1) Each month, approve with the vendor score using a rule frozen before that month's defaults realise. The rule does not read `true_default`. 2) Vendor-only regime: matured labels refit the vendor arm only. 3) Data-owner regime: the same labels also refit the challengers. 4) Both regimes share the approval rule. 5) Learning curves are the vendor-minus-challenger gap on people held out of refitting. Default cadence is the six quarterly checkpoints. 6) The report quotes the Notion hypothesis and prints the curves the seed produced.
+- Steps: 1) Each month, approve with the vendor score using a rule frozen before that month's defaults realise. The rule does not read `true_default`. 2) Write observed and hidden outcomes to `data/experiment/<run id>/outcomes.parquet`. 3) Vendor-only regime: matured labels refit the vendor arm only through a writer inside `vendor/` that takes the run directory and the application ids allowed into that fit, and writes `data/experiment/<run id>/<regime>/` (`ledger.parquet` plus `bind.json`). The bind is the features hash plus a hash of those ids. `vendor.publish` and `vendor.score` stay the full-book Feature 002 API on `data/vendor/<run id>/`. A second reader returns the same probability and three reason codes for a regime ledger. 4) Data-owner regime: the same labels also refit the challengers under `models/` without overwriting `data/models/<run id>/`. 5) Both regimes share the approval rule. 6) Learning curves are the vendor-minus-challenger gap on people held out of refitting. Default cadence is the six quarterly checkpoints. 7) The report quotes the Notion hypothesis and prints the curves the seed produced. The Feature 003 in-sample scores file is not this gap.
 - A run is not evidence if any of these is true: both arms see `external_score_*`; ability alone is enough to match the vendor; rejected defaults are used in training against the regime rule; the approval rule sees the eventual default; shocks are copied onto features with the coefficient the report then calls a finding; the generator or the hyperparameters are changed until the curves match the Notion sentence.
 - Satisfies: learning curves of the gap under both regimes. Synthetic panel only.
 
 ### Feature 005: Champion and challenger decision report
 
-- Given: vendor and challenger scores with outcomes, on one population at a time.
+- Given: vendor and challenger scores with outcomes, on one population at a time. The scores are the held-out scores from Feature 004. The Feature 003 in-sample file is not this report.
 - Steps: 1) Split by segment (`region`, income band, gender, age band where non-null) and by `history_months` (thin versus thick). 2) For each split, report rank lift of the vendor over each challenger. 3) At several cut-offs, report the change in approval rate and expected loss if the cut moves from the vendor score to a named challenger.
 - Satisfies: where the vendor still adds lift, where a challenger has caught up, and what a phased switch does to approval rate and expected loss.
 
@@ -141,7 +143,7 @@ Alternative-data, null on every public row: `sim_count`, `prepaid_flag`, `electr
 
 ## 4. Immutable Zone Overlaps
 
-- **Vendor score internals** → Training and the booster object stay inside `src/scorecheck/vendor/`. Other packages call `vendor.score` and receive a score plus three reason codes. Feature 002's test checks that the booster is not in the package's public namespace. The challenger drop of `external_score_*` is part of this boundary: those columns are vendor inputs, not a window into the booster.
+- **Vendor score internals** → Training and the booster object stay inside `src/scorecheck/vendor/`. Other packages call `vendor.score` for the full-book ledger, or the Feature 004 regime reader for a regime ledger, and receive a score plus three reason codes. Downstream code does not import `vendor._private`. Feature 002's test checks that the booster object is not in the package's public namespace. The challenger drop of `external_score_*` is part of this boundary. On a public frame those columns are vendor-only inputs. On the synthetic panel they stay null. They are not a window into the booster.
 - **Behavioural-data schema** → Section 2 is the schema. Feature 001 is the first writer. A later column change is a decision, then a check change, then code. The logical-hash test is the reproducibility lock. Ground truth is outside the schema the models see.
 - **Approved reason-code list and policy text** → Not created in Features 001–006. `explain/` stays a stub that cannot draft. Feature 007 reads the list from a file under `src/scorecheck/explain/policy/` once a human has put the sentences there. The agent does not add codes at runtime.
 - **`checks/approved/` and `MANIFEST.sha256`** → This design does not write there. The feature loop locks checks only after review, through `python scripts/lock_checks.py`.

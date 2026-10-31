@@ -63,6 +63,8 @@ One row per application. Core columns are the ones at least two of the four publ
 | `default_label` | Binary default as the source defines it |
 | `label_observed` | 0 when the outcome is hidden (rejects) |
 
+Status 30 Oct 2026: Feature 001 writes `label_observed` 1 on every row of `application_features`, and `default_label` equals origination-month `true_default`. Hidden outcomes for Feature 004 live in `data/experiment/<run id>/outcomes.parquet`. The row above is the proposal the locked panel did not implement. On the synthetic panel `external_score_*` stay null; the vendor probability is read through `vendor.score` and is not written back. The write-back sentence below is the earlier proposal.
+
 Vendor-only columns, dropped before any challenger fit: `external_score_1`, `external_score_2`, `external_score_3`. On Home Credit these are `EXT_SOURCE_*`. On the synthetic panel, `external_score_1` is the vendor API score written back for the report, not a training feature for the challenger.
 
 Alternative-data columns, null on every public row: `sim_count`, `prepaid_flag`, `electricity_late_rate`, `electricity_disconnect_count`, `remittance_inflow_mean`, `ewallet_net_flow_mean`, `shared_account_flag`.
@@ -75,7 +77,7 @@ Lock this column list in the design doc before Feature 001 checks are drafted. A
 
 What "the same seed reproduces the output" requires in this repo:
 
-- One `numpy.random.Generator` from `np.random.default_rng(seed)`. Do not call `np.random.seed`.
+- One `numpy.random.Generator` from `np.random.default_rng(seed)`. Do not call `np.random.seed`. Status 30 Oct 2026: draws use `scorecheck._streams.Streams`; `Streams` is the only caller of `default_rng` in `src/`.
 - `PYTHONHASHSEED` fixed at process start (value `0` is the usual pin).
 - Pinned versions in `requirements.txt`.
 - Config written next to every output (seed, scale, library versions).

@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from scorecheck import config, rundir
+from scorecheck.vendor import ReasonCode, score
 
 STAGES = ["vendor", "models", "experiment", "report", "validate", "explain"]
 TABLES = [
@@ -24,17 +25,18 @@ def test_cli_default_run(tmp_path):
     assert result.returncode == 0, result.stderr
 
     lines = result.stdout.splitlines()
-    assert lines[0] == config.BANNERS["default"]
-    for stage in STAGES:
-        assert lines[1:].count(stage) == 1, stage
+    assert lines == [config.BANNERS["default"], *STAGES]
 
     processed = tmp_path / "data" / "processed"
     runs = [p for p in processed.iterdir()]
-    assert [p.name for p in runs] == [rundir.run_id(config.SEED, 50000)]
+    run_id = rundir.run_id(config.SEED, 50000)
+    assert run_id == "31a32519f30491a4"
+    assert [p.name for p in runs] == [run_id]
     run_dir = runs[0]
     assert run_dir.is_dir()
-    for table in TABLES:
-        assert (run_dir / f"{table}.parquet").is_file(), table
+    assert {p.name for p in run_dir.iterdir()} == {*(f"{table}.parquet" for table in TABLES), "run_config.json"}
+    ledger = tmp_path / "data" / "vendor" / run_id
+    assert {p.name for p in ledger.iterdir()} == {"ledger.parquet", "bind.json"}
 
     t = {name: pd.read_parquet(run_dir / f"{name}.parquet") for name in TABLES}
     person_count = len(t["person"])
@@ -51,6 +53,14 @@ def test_cli_default_run(tmp_path):
         assert set(frame["person_id"]) == set(t["person"]["person_id"]), table
     assert len(t["sim"]) >= 1
     assert len(t["application_features"]) == person_count > 0
+    for name in ("external_score_1", "external_score_2", "external_score_3"):
+        assert t["application_features"][name].isna().all()
+    application_id = int(t["application_features"]["application_id"].iloc[0])
+    probability, reason_1, reason_2, reason_3 = score(run_dir, application_id)
+    assert isinstance(probability, float) and 0.0 <= probability <= 1.0
+    codes = (reason_1, reason_2, reason_3)
+    assert len(set(codes)) == 3
+    assert all(isinstance(code, ReasonCode) for code in codes)
 
     run_config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
     assert run_config["scale"] == "default"

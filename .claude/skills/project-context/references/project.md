@@ -21,19 +21,19 @@ Complexity tier: Complex
 
 ## Architecture
 
-Package `src/scorecheck/`. Design contract: `docs/design.md` (2026-10-26). Where `features.md` still says one latent factor, one monotonic GBM, or about 200,000 households, follow `docs/design.md` until that file is updated.
+Package `src/scorecheck/`. Design contract: `docs/design.md` (2026-10-26).
 
-Panel (ability, willingness, shocks, vendor-only signal; default 50,000 households × 24 months; full 200,000) -> `application_features` -> vendor API (score + three reason codes) and challengers in shadow (LightGBM, XGBoost, sklearn `HistGradientBoostingClassifier`, in-house scorecard; unconstrained plus a monotone refit where supported; challengers do not see `external_score_*`) -> outcomes experiment on the synthetic panel only -> decision report -> validation pack PDF (ReportLab). Explanation is a later function and does not choose the model. Default command also scores UCI Default of Credit Card Clients (id 350) as a separate frame. Full command scores Home Credit aggregates as a separate frame. Populations are not stacked.
+Panel (ability, willingness, shocks, vendor-only signal; default 50,000 households × 24 months; full 200,000) -> `application_features` -> vendor API (score + three reason codes) and challengers in shadow (LightGBM, XGBoost, sklearn `HistGradientBoostingClassifier`, in-house scorecard; unconstrained plus a monotone refit where supported; challengers do not see `external_score_*`) -> outcomes experiment on the synthetic panel only -> decision report -> validation pack PDF (ReportLab). On the synthetic panel `external_score_*` stay null. The vendor probability is read through `vendor.score` and is not written back onto `application_features`. The Feature 003 scores file is an in-sample shadow record. The vendor-versus-challenger gap is the Feature 004 held-out curve. Feature 004 records hidden outcomes in `data/experiment/<run id>/outcomes.parquet` and regime ledgers under `data/experiment/<run id>/<regime>/`. Explanation is a later function and does not choose the model. Default command also scores UCI Default of Credit Card Clients (id 350) as a separate frame. Full command scores Home Credit aggregates as a separate frame. Populations are not stacked.
 
 Data flow: `python -m scorecheck` prints the scale banner, writes detail tables, `ground_truth`, and `application_features`, scores, and (once Feature 006 exists) writes the PDF. Ground truth never joins into model features.
 
-Integration points: Vendor score API (score + three reason codes only); LLM API only at Feature 007; UCI 350 on the default command; Home Credit on the full command. Give Me Some Credit is not loaded.
+Integration points: Vendor score API (full-book `vendor.score`, or the Feature 004 regime reader; score + three reason codes only); LLM API only at Feature 007; UCI 350 on the default command; Home Credit on the full command. Give Me Some Credit is not loaded.
 
 Interface contracts: `application_features` column list in `docs/design.md` §2; vendor score API returns exactly a score and three reason codes; approved reason-code list and policy text for the agent, created before Feature 007; generator output is deterministic for a given seed (logical-table hash).
 
 ## Stack and dependencies
 
-Tech stack: Python 3, pandas, numpy (`np.random.default_rng`), LightGBM, XGBoost, scikit-learn `HistGradientBoostingClassifier`, an in-house weight-of-evidence scorecard, ReportLab for the PDF (fpdf2 only if ReportLab fails layout), an LLM API at Feature 007. Not `optbinning`. Not WeasyPrint.
+Tech stack: Python 3, pandas, numpy (`scorecheck._streams.Streams` is the only caller of `np.random.default_rng` in `src/`), LightGBM, XGBoost, scikit-learn `HistGradientBoostingClassifier`, an in-house weight-of-evidence scorecard, ReportLab for the PDF (fpdf2 only if ReportLab fails layout), an LLM API at Feature 007. Not `optbinning`. Not WeasyPrint.
 
 The loop scripts use the Python 3 standard library only. From the project root:
 
@@ -54,7 +54,7 @@ Do not assume other packages, CLIs, env vars, or services exist unless they are 
 
 ### Immutable zones
 
-- Vendor score internals: the vendor model module may only be reached through its score + three reason codes API; downstream code never reads inside it
+- Vendor score internals: the vendor model module may only be reached through its score + three reason codes API (full-book `vendor.score`, or the Feature 004 regime reader); downstream code never reads inside it
 - Behavioural-data schema (documented, with a fixed seed so every result can be reproduced)
 - Approved reason-code list and policy text used by the Layer 4 agent
 - checks/approved/ and MANIFEST.sha256

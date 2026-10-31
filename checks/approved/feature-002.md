@@ -4,7 +4,7 @@ Status: draft
 
 Feature: feature-002
 
-The ledger contract is JOS-24. The four training answers are the JOS-83 reply `527ed809-3466-4401-9c3d-ae40548db9b6`. Where `docs/design.md` says the synthetic vendor score is written back into `external_score_1`, or that vendor training includes `external_score_*` and behavioural correlates of `vendor_signal`, these checks follow JOS-24 and that reply. `external_score_*` stay null. Origination-month `vendor_signal` is the only private input.
+The ledger contract is JOS-24. The four training answers are the JOS-83 reply `527ed809-3466-4401-9c3d-ae40548db9b6`. `external_score_*` stay null. Origination-month `vendor_signal` is the only private input.
 
 The LightGBM seed integer is one `integers(0, 2**31)` draw. LightGBM stores that seed as a 32-bit signed integer, so the draw is the non-negative range below `2**31`. A missing origination row, and a group-map mismatch, each raise `scorecheck.schema.SchemaError`. The same class is what `read_at_origination` raises when a person has no single origination row. Two-class reason codes are the top three groups by the sum of absolute LightGBM contributions.
 

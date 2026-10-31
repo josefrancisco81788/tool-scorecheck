@@ -15,7 +15,7 @@ Checks: locked in `checks/approved/feature-001.md`
 
 ## Feature 002 — Black-box vendor score API
 
-Status: Checks locked
+Status: Complete
 
 Requirements:
 - Given a vendor gradient-boosted model trained on the panel, when downstream code requests a score for an applicant, then it receives only a score and three reason codes, with no access to the model's internals
@@ -24,12 +24,13 @@ Checks: locked in `checks/approved/feature-002.md`
 
 ## Feature 003 — In-house challenger in shadow mode
 
-Status: Not started
+Status: Checks in draft
 
 Requirements:
 - Given the same applicants scored by the vendor, when LightGBM, XGBoost, and histogram gradient boosting each fit unconstrained and, where the library supports it, with a monotone refit, plus the points scorecard, score them using only the data owner's features, then all four lines are recorded beside the vendor score without changing any decision
+- The scores file is an in-sample shadow record on a fully labelled book. It is not the held-out vendor-versus-challenger gap. Features 004 and 005 own that gap
 
-Checks: not written
+Checks: drafted in `checks/draft/feature-003.md`
 
 ## Feature 004 — Outcomes-ownership experiment
 
@@ -38,6 +39,8 @@ Status: Not started
 Requirements:
 - Given two regimes over 24 simulated months, one where repayment outcomes flow only to the vendor and one where the data owner keeps them too, when the experiment runs, then it produces learning curves showing how the vendor-versus-challenger gap moves in each regime
 - The hypothesis is recorded in the report and is not a target the generator is adjusted to hit
+- Hidden outcomes live in `data/experiment/<run id>/outcomes.parquet`, keyed by application, checkpoint, and regime. A hidden row has `label_observed` 0 there and an empty matured label. `application_features` is not rewritten
+- A vendor refit is a writer inside `vendor/` that takes the run directory and the application ids allowed into that fit, and writes `data/experiment/<run id>/<regime>/`. It is not another `vendor.publish`. Challenger refits stay under `models/` and do not overwrite the Feature 003 scores file
 
 Checks: not written
 
