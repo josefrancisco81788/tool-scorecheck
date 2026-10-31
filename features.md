@@ -24,7 +24,7 @@ Checks: locked in `checks/approved/feature-002.md`
 
 ## Feature 003 — In-house challenger in shadow mode
 
-Status: Checks in draft
+Status: Checks locked
 
 Requirements:
 - Given the same applicants scored by the vendor, when LightGBM, XGBoost, and histogram gradient boosting each fit unconstrained and, where the library supports it, with a monotone refit, plus the points scorecard, score them using only the data owner's features, then all four lines are recorded beside the vendor score without changing any decision
