@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
-from scorecheck import config, features, panel, vendor
+from scorecheck import config, features, models, panel, vendor
 
 DATA_ROOT = Path("data/processed")
 STAGES: tuple[str, ...] = ("vendor", "models", "experiment", "report", "validate", "explain")
@@ -18,7 +18,10 @@ class RunRequest:
 def parse_args(argv: Sequence[str] | None) -> RunRequest:
     parser = argparse.ArgumentParser(
         prog="python -m scorecheck",
-        description="Generate the synthetic panel, its application features, and the vendor ledger.",
+        description=(
+            "Generate the synthetic panel, publish the vendor ledger, and record in-house "
+            "challengers in shadow mode."
+        ),
     )
     parser.add_argument("--scale", choices=sorted(config.SCALES), default="default")
     args = parser.parse_args(argv)
@@ -31,6 +34,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     run_dir = panel.generate(config.SEED, request.n_households, DATA_ROOT)
     features.from_panel(run_dir)
     vendor.publish(run_dir)
+    models.publish(run_dir)
     for stage in STAGES:
         print(stage)
     return 0

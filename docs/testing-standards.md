@@ -64,7 +64,7 @@ Test commands, from the repo root after `pip install -r requirements.txt`:
 - Unit suite, which blocks merge: `python -m pytest tests/unit`
 - Eval suite, advisory until v1: `python -m pytest tests/evals`
 - Integration suite, which runs the 50,000-household default command: `python -m pytest tests/integration`
-- Core-module coverage: `python -m pytest tests/unit --cov=scorecheck.panel --cov=scorecheck.features --cov-report=term-missing`
+- Core-module coverage: `python -m pytest tests/unit --cov=scorecheck.panel --cov=scorecheck.features --cov=scorecheck.vendor --cov=scorecheck.models --cov-report=term-missing`
 
 Regenerate the golden panel with `python scripts/write_golden_panel.py`, and add a line to `tests/fixtures/golden/CHANGELOG.md` saying why any hash changed.
 
