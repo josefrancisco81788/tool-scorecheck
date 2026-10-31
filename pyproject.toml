@@ -6,8 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "scorecheck"
 version = "0.1.0"
 description = "Open testbed for the lender's side of an alternative-data consumer credit score."
-requires-python = ">=3.11"
-dependencies = ["numpy>=1.26", "pandas>=2.1", "pyarrow>=14", "lightgbm==4.7.0"]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pyarrow>=14",
+    "lightgbm==4.7.0",
+    "xgboost==3.4.1",
+    "scikit-learn==1.9.1",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -59,7 +59,7 @@ def test_draft_raises():
 
 
 def test_command_order(tmp_path, monkeypatch):
-    from scorecheck import features, panel, vendor
+    from scorecheck import features, models, panel, vendor
 
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(config, "SCALES", {"default": 200, "full": 400})
@@ -67,6 +67,7 @@ def test_command_order(tmp_path, monkeypatch):
     real_generate = panel.generate
     real_features = features.from_panel
     real_publish = vendor.publish
+    real_models = models.publish
 
     def generate(*args, **kwargs):
         order.append("panel.generate")
@@ -80,11 +81,16 @@ def test_command_order(tmp_path, monkeypatch):
         order.append("vendor.publish")
         return real_publish(*args, **kwargs)
 
+    def models_publish(*args, **kwargs):
+        order.append("models.publish")
+        return real_models(*args, **kwargs)
+
     monkeypatch.setattr(panel, "generate", generate)
     monkeypatch.setattr(features, "from_panel", from_panel)
     monkeypatch.setattr(vendor, "publish", publish)
+    monkeypatch.setattr(models, "publish", models_publish)
     assert cli.main([]) == 0
-    assert order == ["panel.generate", "features.from_panel", "vendor.publish"]
+    assert order == ["panel.generate", "features.from_panel", "vendor.publish", "models.publish"]
 
 
 def test_main_prints_banner_then_stages(tmp_path, monkeypatch, capsys):

@@ -55,7 +55,23 @@ def test_cli_default_run(tmp_path):
     assert len(t["application_features"]) == person_count > 0
     for name in ("external_score_1", "external_score_2", "external_score_3"):
         assert t["application_features"][name].isna().all()
+    scores = tmp_path / "data" / "models" / run_id
+    assert {p.name for p in scores.iterdir()} == {"scores.parquet", "bind.json"}
+    from scorecheck.models import line
+
     application_id = int(t["application_features"]["application_id"].iloc[0])
+    challenger = line(run_dir, application_id)
+    challenger_probabilities = (
+        challenger.vendor_probability,
+        challenger.lightgbm,
+        challenger.lightgbm_monotone,
+        challenger.xgboost,
+        challenger.xgboost_monotone,
+        challenger.hist_gradient_boosting,
+        challenger.hist_gradient_boosting_monotone,
+        challenger.scorecard_probability,
+    )
+    assert all(isinstance(value, float) and 0.0 <= value <= 1.0 for value in challenger_probabilities)
     probability, reason_1, reason_2, reason_3 = score(run_dir, application_id)
     assert isinstance(probability, float) and 0.0 <= probability <= 1.0
     codes = (reason_1, reason_2, reason_3)

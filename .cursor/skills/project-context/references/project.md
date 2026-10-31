@@ -25,7 +25,9 @@ Package `src/scorecheck/`. Design contract: `docs/design.md` (2026-10-26).
 
 Panel (ability, willingness, shocks, vendor-only signal; default 50,000 households × 24 months; full 200,000) -> `application_features` -> vendor API (score + three reason codes) and challengers in shadow (LightGBM, XGBoost, sklearn `HistGradientBoostingClassifier`, in-house scorecard; unconstrained plus a monotone refit where supported; challengers do not see `external_score_*`) -> outcomes experiment on the synthetic panel only -> decision report -> validation pack PDF (ReportLab). On the synthetic panel `external_score_*` stay null. The vendor probability is read through `vendor.score` and is not written back onto `application_features`. The Feature 003 scores file is an in-sample shadow record. The vendor-versus-challenger gap is the Feature 004 held-out curve. Feature 004 records hidden outcomes in `data/experiment/<run id>/outcomes.parquet` and regime ledgers under `data/experiment/<run id>/<regime>/`. Explanation is a later function and does not choose the model. Default command also scores UCI Default of Credit Card Clients (id 350) as a separate frame. Full command scores Home Credit aggregates as a separate frame. Populations are not stacked.
 
-Data flow: `python -m scorecheck` prints the scale banner, writes detail tables, `ground_truth`, and `application_features`, scores, and (once Feature 006 exists) writes the PDF. Ground truth never joins into model features.
+Data flow: `python -m scorecheck` prints the scale banner, writes detail tables, `ground_truth`, and `application_features`, calls `vendor.publish` then `models.publish`, prints the six stage names, and (once Feature 006 exists) writes the PDF. Ground truth never joins into model features.
+
+`features.challenger_matrix` returns the nineteen data-owner columns sorted by `application_id`. It drops `external_score_*` and age, gender, education, marital status, and region. Those demographic columns stay on `application_features`. `models.publish` fits LightGBM, XGBoost, and `HistGradientBoostingClassifier` unconstrained and again with a monotone constraint on utilization, the three delinquency counts, and installment-to-income, then the in-house scorecard (ten quantile bins, adjacent merge on those five columns, weight of evidence with 0.5 smoothing, logistic regression, points to double the odds 20, base points 600, base odds 50). Scores are written only to `data/models/<run id>/scores.parquet` and `bind.json`. Books of at most 300 applications copy `vendor_probability` through `vendor.score`, once per application, before any fit. Larger books, including the default command, store 0.5 in that column. A one-class book stores the observed rate in every probability column and leaves `scorecard_points` null. No approval flag is written.
 
 Integration points: Vendor score API (full-book `vendor.score`, or the Feature 004 regime reader; score + three reason codes only); LLM API only at Feature 007; UCI 350 on the default command; Home Credit on the full command. Give Me Some Credit is not loaded.
 
@@ -33,7 +35,7 @@ Interface contracts: `application_features` column list in `docs/design.md` §2;
 
 ## Stack and dependencies
 
-Tech stack: Python 3, pandas, numpy (`scorecheck._streams.Streams` is the only caller of `np.random.default_rng` in `src/`), LightGBM, XGBoost, scikit-learn `HistGradientBoostingClassifier`, an in-house weight-of-evidence scorecard, ReportLab for the PDF (fpdf2 only if ReportLab fails layout), an LLM API at Feature 007. Not `optbinning`. Not WeasyPrint.
+Tech stack: Python >=3.12, pandas, numpy (`scorecheck._streams.Streams` is the only caller of `np.random.default_rng` in `src/`), LightGBM `4.7.0`, XGBoost `3.4.1`, scikit-learn `1.9.1` (`HistGradientBoostingClassifier` and logistic regression), an in-house weight-of-evidence scorecard, ReportLab for the PDF (fpdf2 only if ReportLab fails layout), an LLM API at Feature 007. Not `optbinning`. Not WeasyPrint. `requires-python` is `>=3.12` because that XGBoost wheel requires it.
 
 The loop scripts use the Python 3 standard library only. From the project root:
 
@@ -46,6 +48,8 @@ Do not assume other packages, CLIs, env vars, or services exist unless they are 
 ## Conventions
 
 - Track work in `features.md`. Build one feature per loop.
+- Test command: `python -m pytest`. Unit coverage command includes `scorecheck.panel`, `scorecheck.features`, `scorecheck.vendor`, and `scorecheck.models`.
+- Challenger code lives in `src/scorecheck/models/`. The matrix lives on `scorecheck.features.challenger_matrix`. Model seeds use `Streams` in the `models` namespace, one integer each for `lightgbm`, `xgboost`, `hist_gradient_boosting`, and `scorecard`.
 - Write checks before implementation. Locked copies live in `checks/approved/`.
 - Loop rules live in `program.md`. Recurring mistakes are appended under Learned rules after a human confirms them.
 - Files listed as immutable zones need explicit human approval before any edit.

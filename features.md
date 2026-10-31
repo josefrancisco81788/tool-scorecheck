@@ -24,13 +24,15 @@ Checks: locked in `checks/approved/feature-002.md`
 
 ## Feature 003 — In-house challenger in shadow mode
 
-Status: Checks in draft
+Status: Complete
 
 Requirements:
 - Given the same applicants scored by the vendor, when LightGBM, XGBoost, and histogram gradient boosting each fit unconstrained and, where the library supports it, with a monotone refit, plus the points scorecard, score them using only the data owner's features, then all four lines are recorded beside the vendor score without changing any decision
 - The scores file is an in-sample shadow record on a fully labelled book. It is not the held-out vendor-versus-challenger gap. Features 004 and 005 own that gap
 
-Checks: drafted in `checks/draft/feature-003.md`
+Checks: locked in `checks/approved/feature-003.md`
+
+Results: `results/feature-003/`
 
 ## Feature 004 — Outcomes-ownership experiment
 
