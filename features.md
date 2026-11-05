@@ -36,15 +36,19 @@ Results: `results/feature-003/`
 
 ## Feature 004 — Outcomes-ownership experiment
 
-Status: Not started
+Status: Checks locked
 
 Requirements:
 - Given two regimes over 24 simulated months, one where repayment outcomes flow only to the vendor and one where the data owner keeps them too, when the experiment runs, then it produces learning curves showing how the vendor-versus-challenger gap moves in each regime
+- An account is bad if it defaults within 6 months of origination, counted only once it has been on the book 6 months
+- Every point on the curve is measured on the same target: the whole holdout, including applicants the lender would decline, against that 6-month outcome. A point moves only because the models changed
+- Each point reports training size, the number of bads in each fit and in the holdout, and a confidence interval on the gap
+- A random 5% of the applicants the cutoff would decline are approved as a test cell and tracked, so their real outcomes exist for Features 005 and 006
 - The hypothesis is recorded in the report and is not a target the generator is adjusted to hit
 - Hidden outcomes live in `data/experiment/<run id>/outcomes.parquet`, keyed by application, checkpoint, and regime. A hidden row has `label_observed` 0 there and an empty matured label. `application_features` is not rewritten
-- A vendor refit is a writer inside `vendor/` that takes the run directory and the application ids allowed into that fit, and writes `data/experiment/<run id>/<regime>/`. It is not another `vendor.publish`. Challenger refits stay under `models/` and do not overwrite the Feature 003 scores file
+- A vendor refit is a writer inside `vendor/` that takes the run directory and the application ids allowed into that fit, and writes `data/experiment/<run id>/<regime>/`. It is not another `vendor.publish`. Challenger refit code stays under `models/` and does not overwrite `data/models/<run id>/`
 
-Checks: not written
+Checks: locked in `checks/approved/feature-004.md`. Engineering choices: `docs/choices/feature-004.md`
 
 ## Feature 005 — Champion and challenger decision report
 
@@ -52,6 +56,8 @@ Status: Not started
 
 Requirements:
 - Given vendor and challenger scores with outcomes, when the report is generated, then it shows by segment and by length of behavioural history (thin-file versus thick-file) where the vendor still adds lift, where the challenger has caught up, and what a phased switch would cost in approval rate and expected loss
+- A swap-set analysis: which applicants the challenger would approve that the champion declines (swap-ins) and the reverse (swap-outs), with the size and bad rate of each group. Swap-in risk uses the Feature 004 test-cell outcomes where they exist
+- Bad rate and expected loss at an equal approval rate: with the approval rate held the same, how many fewer defaults, or how much lower expected loss, the challenger delivers. AUC alone is not the decision
 
 Checks: not written
 
@@ -61,6 +67,11 @@ Status: Not started
 
 Requirements:
 - Given scores and outcomes for both models, including a simulated year-two shift (new lender channel, El Nino shock to rural incomes, telco pricing change), when the validation pack is generated, then it reports ranking performance overall and by segment, calibration by segment, PSI and characteristic-level drift, reject inference, fairness checks with a proxy-risk note, and approval and loss trade-off curves at several cut-offs, and renders them as a PDF. The default command scores UCI Default of Credit Card Clients (id 350) on its own frame. The full command scores Home Credit aggregates on their own frame. Give Me Some Credit is not used.
+- Ranking is reported as AUC, Gini, and KS
+- Calibration is checked by segment: whether a predicted default rate is matched by the observed rate for rural applicants, thin files, and each region
+- Stability uses PSI and characteristic-level drift, especially across the simulated year-two shift
+- All segment-level evidence comes from this feature. Feature 004's curves are overall numbers only
+- Reject inference is checked against the Feature 004 test cell, whose declined-but-approved applicants have real outcomes
 
 Checks: not written
 

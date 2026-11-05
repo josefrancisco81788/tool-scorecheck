@@ -15,7 +15,8 @@ Copy this checklist and keep it updated:
 
 - [ ] Feature chosen in `features.md` (one feature only)
 - [ ] Requirements clear enough to test
-- [ ] Checks drafted with the write-checks skill into `checks/draft/`
+- [ ] Product questions asked in one plain-language batch, with recommendations (or none needed)
+- [ ] Checks drafted with the write-checks skill into `checks/draft/`, engineering choices in `docs/choices/`
 - [ ] Human reviewed the checks in plain language
 - [ ] Drafts revised if the human added or rejected anything, then reviewed again
 - [ ] Checks locked
@@ -41,9 +42,13 @@ Use the write-checks skill. Checks land in `checks/draft/` only.
 
 ### 3. Human review — low freedom
 
-Stop and show the checks in plain language, including the Executable tests table and any test kind marked "not applicable" with its reason. Ask whether they cover what the user cares about. Wait for an answer.
+Stop and show the checks in plain language. Ask whether they cover what the user cares about. Wait for an answer.
 
-If the user changes a requirement, update `features.md`, revise the draft, and review again.
+The user approves outcomes, not engineering. Do not ask them to review `docs/choices/`, test tables, column lists, or call counts. Mention a test kind marked "not applicable" in one line with its reason.
+
+If the user changes a requirement, update `features.md`, revise the draft, and review again. Follow "When to stop and ask" in `program.md`: after 3 revision rounds, stop and say in plain words what is unresolved.
+
+If a check locked by an earlier feature blocks this one, propose the smallest edit to it in plain words with a recommendation. Only after the user says yes, edit it and run `python scripts/refresh_check_manifest.py`.
 
 ### 4. Lock — low freedom
 
@@ -65,6 +70,7 @@ Hand the feature to a fresh feature-builder context with:
 - `program.md`
 - this feature's section in `features.md`
 - the locked check file
+- `docs/choices/<feature-id>.md`
 - the feature-builder skill
 
 Do not carry earlier features' conversation into that context.

@@ -54,6 +54,27 @@ Completeness: a person can do what the feature describes, the behavior is wired 
 
 Both are required. Record completeness in the results file for the closing round.
 
+## Who decides what
+
+The human is not expected to judge engineering detail. Split every feature's decisions in two:
+
+- **Product questions go to the human.** What result the feature must show, how much, for whom, and any threshold that changes money, risk, or who is affected (for example, what share of applicants the lender declines). Ask them in plain words, in one batch, before drafting checks. Give a recommended answer and, where one can be measured, the measured number behind it.
+- **Engineering choices belong to the agent.** File layout, column order, function names, training arguments, hashing, call counts, test design, tolerances. Make the choice, write it in `docs/choices/<feature-id>.md` with one line of why and how to undo it, and move on. Do not ask the human to approve these and do not lock them.
+
+The locked check file holds only the product outcomes, in plain language, about one page. A check a person cannot read and say "yes, that's what I want" does not belong in it.
+
+If a check locked by an earlier feature blocks a sensible engineering choice, do not work around it silently. Propose the smallest edit to that check in plain words with a recommendation. After the human says yes, edit it and run `python scripts/refresh_check_manifest.py`.
+
+## When to stop and ask
+
+Count these as blocked, and tell the human in plain words what is unresolved and what you recommend:
+
+- A check draft has had 3 revision rounds without being approved. A reviewer (`/interrogate`, a swarm, or a second agent) may only raise a check that cannot be measured, a check that contradicts the requirement, or a requirement with no check. Loopholes that only a deliberately dishonest implementation could use are not review findings.
+- A feature has run more than 2 hours without a new check lock, a passing round, or a merge.
+- A locked check, from this feature or an earlier one, is wrong or blocks the feature.
+
+Post each review verdict on the feature's PR before locking or merging, so the reason a feature passed can be found later.
+
 ## Learned rules
 
 <!-- auto-loop may append below this line after the user confirms. Do not edit anything above. -->

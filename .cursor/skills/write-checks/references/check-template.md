@@ -4,21 +4,15 @@ Status: draft
 
 Feature: <feature-id>
 
+About one page. Plain language. Engineering choices and the test plan live in `docs/choices/<feature-id>.md`, which is not locked.
+
+## Product answers
+
+The human's answers to this feature's product questions, one line each, with the number they chose. Write "none" if the feature raised none.
+
 ## Behavior
 
-- [ ] <observable outcome from the requirement>
-
-## Executable tests
-
-Every automated test that will prove the checks above, named before any product code exists. The feature builder writes these first and may not weaken them.
-
-Test command: `<command run from the project root, or "none yet: the feature creates it">`
-
-| Test | File | What it asserts | Proves check |
-|---|---|---|---|
-| <test name> | <tests/...> | <input, expected outcome, and any tolerance as a number> | <Behavior item> |
-
-Required kinds, per `docs/testing-standards.md`: unit, golden dataset (fixed input and expected output in `tests/fixtures/golden/`) and eval case (`tests/evals/`). Mark a kind "not applicable" only with a reason the human approves, for example "eval case: not applicable, output is deterministic".
+- [ ] <observable outcome from the requirement, one or two sentences>
 
 ## Integration
 
@@ -26,7 +20,7 @@ Required kinds, per `docs/testing-standards.md`: unit, golden dataset (fixed inp
 
 ## Regression
 
-- [ ] Existing places that already perform this job follow the new behavior. Write "none" if the feature changes nothing that already exists.
+- [ ] The tests and locked checks of earlier features still pass. Name anything this feature deliberately changes, or write "nothing else changes".
 
 ## Completeness
 
