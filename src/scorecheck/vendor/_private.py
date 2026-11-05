@@ -91,10 +91,15 @@ def one_class_probability(table: TrainingTable) -> np.ndarray:
     return np.full(len(table.application_id), rate, dtype=np.float64)
 
 
-def fit(table: TrainingTable) -> tuple[np.ndarray, list[dict[str, float]]]:
+def lightgbm_seed(seed: int) -> int:
+    return int(Streams(seed, "vendor")("lightgbm").integers(0, 2**31))
+
+
+def train(matrix: pd.DataFrame, label: np.ndarray, seed: int):
+    """Train the Feature 002 booster. ``seed`` is the run seed."""
     import lightgbm
 
-    drawn = int(Streams(table.seed, "vendor")("lightgbm").integers(0, 2**31))
+    drawn = lightgbm_seed(seed)
     params = {
         "objective": "binary",
         "deterministic": True,
@@ -112,10 +117,16 @@ def fit(table: TrainingTable) -> tuple[np.ndarray, list[dict[str, float]]]:
         "feature_fraction_seed": drawn,
         "data_random_seed": drawn,
     }
+    names = list(matrix.columns)
+    data = matrix.to_numpy(dtype=np.float64)
+    dataset = lightgbm.Dataset(data, label=np.asarray(label).astype(np.float64), feature_name=names)
+    return lightgbm.train(params, dataset, num_boost_round=40)
+
+
+def fit(table: TrainingTable) -> tuple[np.ndarray, list[dict[str, float]]]:
+    booster = train(table.matrix, table.label, table.seed)
     names = list(table.matrix.columns)
     data = table.matrix.to_numpy(dtype=np.float64)
-    dataset = lightgbm.Dataset(data, label=table.label.astype(np.float64), feature_name=names)
-    booster = lightgbm.train(params, dataset, num_boost_round=40)
     probability = np.clip(booster.predict(data), 0.0, 1.0).astype(np.float64)
     contrib = np.asarray(booster.predict(data, pred_contrib=True), dtype=np.float64)[:, :-1]
     rows = [{name: float(contrib[i, j]) for j, name in enumerate(names)} for i in range(len(data))]
