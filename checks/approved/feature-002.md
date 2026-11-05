@@ -62,7 +62,7 @@ A two-class `publish` calls `pred_contrib` on the training rows in `application_
 
 ### Writers
 
-- [ ] V3. `publish` is the only writer of the ledger. `score` is the only reader of the ledger. `panel.generate` still writes only `household.parquet`, `person.parquet`, `sim.parquet`, `electricity_account.parquet`, `ewallet_account.parquet`, `month_behaviour.parquet`, `ground_truth.parquet`, and `run_config.json`. `from_panel` still adds only `application_features.parquet`. After `publish`, the run directory's file set is unchanged. The ledger files are not inside the run directory.
+- [ ] V3. `publish` is the only writer of the ledger. `score` and the batch reader `vendor.regime.read_published` are the only readers of the ledger, and both live inside `src/scorecheck/vendor/`. `panel.generate` still writes only `household.parquet`, `person.parquet`, `sim.parquet`, `electricity_account.parquet`, `ewallet_account.parquet`, `month_behaviour.parquet`, `ground_truth.parquet`, and `run_config.json`. `from_panel` still adds only `application_features.parquet`. After `publish`, the run directory's file set is unchanged. The ledger files are not inside the run directory.
 
 ### External scores
 
