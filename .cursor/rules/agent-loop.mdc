@@ -6,10 +6,12 @@ alwaysApply: true
 # Agent loop
 
 - Build one feature at a time. The unit of work is a feature in `features.md`.
-- Write checks before implementation. The user approves them. Then lock with `python scripts/lock_checks.py` and commit `checks/approved/`.
+- Write checks before implementation. Locked checks are plain-language product outcomes, about one page. Engineering choices and the test plan go in `docs/choices/<feature-id>.md`, owned by the agent and not locked. Ask the user only product questions, in one batch, with a recommendation (see `program.md` "Who decides what").
+- The user approves the checks. Then lock with `python scripts/lock_checks.py` and commit `checks/approved/`.
 - Do not create or edit files in `checks/approved/`. Do not edit `scripts/lock_checks.py`, `scripts/verify_checks.py`, or `scripts/refresh_check_manifest.py`.
 - Run `python scripts/verify_checks.py` before implementation rounds and before calling a feature done. If it fails, stop and ask the user.
 - Run `python scripts/refresh_check_manifest.py` only when the user explicitly says they changed an approved check.
 - Locked checks passing is one gate. Also confirm the user-facing behavior exists and is wired into the app.
 - Record every round under `results/<feature-id>/`.
 - Recurring mistakes become confirmed rules under `program.md` Learned rules. They never become edits to approved checks.
+- Treat 3 check revision rounds without approval, or 2 hours without a lock, passing round, or merge, as blocked: tell the user in plain words what is unresolved (see `program.md` "When to stop and ask").

@@ -27,8 +27,8 @@ Implement one locked feature. Start from this skill, `program.md`, the project-c
 Copy and update:
 
 - [ ] `python scripts/verify_checks.py` passes before you change product code
-- [ ] The test command named in the approved checks runs. If the checks say the feature creates it, set it up first
-- [ ] Every test in the approved check file's Executable tests table is written, and each one fails for the reason the table predicts, before any product code for it exists
+- [ ] The test command named in the test plan runs. If the plan says the feature creates it, set it up first
+- [ ] Every test that proves a locked check is written, and each one fails for the reason you expect, before any product code for it exists
 - [ ] Implement one coherent attempt
 - [ ] Run the project's tests and compare behavior to the approved checks
 - [ ] Write `results/<feature-id>/round-NNN.md`
@@ -43,7 +43,13 @@ If a check fails because the check is wrong, or because the requirement was neve
 
 ## Tests
 
-The Executable tests table in the approved check file is part of the evaluation. Write those tests as the table describes them. Never loosen a tolerance, skip, mark as expected-to-fail, or delete a listed test to make it pass. If a listed test is wrong, stop and say so, the same as for a wrong check. You may add tests beyond the table.
+Features 001–003 name their tests in an Executable tests table inside the locked check file. For those, the table is part of the evaluation: write the tests as it describes, and if a listed test is wrong, stop and say so.
+
+From Feature 004 on, the test plan lives in `docs/choices/<feature-id>.md`. You own it. You may change a planned test when it is wrong, and you log the change and the reason there. Every locked check still needs at least one test that proves it, as the plain-language check reads.
+
+Either way, never loosen a tolerance, skip, mark as expected-to-fail, or delete a test only to make it pass. You may add tests.
+
+Engineering choices are yours. Make them, log them in `docs/choices/<feature-id>.md`, and keep going. Stop for the human only for the cases in "When to stop and ask" in `program.md`.
 
 Mark a check as passing only when a test that proves it was seen passing in this round, or, for completeness, when you watched the behavior happen. Reading the code is not evidence. Paste the test output into the round's results file.
 
