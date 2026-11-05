@@ -36,7 +36,7 @@ Results: `results/feature-003/`
 
 ## Feature 004 — Outcomes-ownership experiment
 
-Status: Checks locked
+Status: Complete
 
 Requirements:
 - Given two regimes over 24 simulated months, one where repayment outcomes flow only to the vendor and one where the data owner keeps them too, when the experiment runs, then it produces learning curves showing how the vendor-versus-challenger gap moves in each regime
@@ -47,8 +47,11 @@ Requirements:
 - The hypothesis is recorded in the report and is not a target the generator is adjusted to hit
 - Hidden outcomes live in `data/experiment/<run id>/outcomes.parquet`, keyed by application, checkpoint, and regime. A hidden row has `label_observed` 0 there and an empty matured label. `application_features` is not rewritten
 - A vendor refit is a writer inside `vendor/` that takes the run directory and the application ids allowed into that fit, and writes `data/experiment/<run id>/<regime>/`. It is not another `vendor.publish`. Challenger refit code stays under `models/` and does not overwrite `data/models/<run id>/`
+- The simulated lender's cutoff is re-pinned to decline about 20% each time the vendor is refit; it uses scores only
 
 Checks: locked in `checks/approved/feature-004.md`. Engineering choices: `docs/choices/feature-004.md`
+
+Results: `results/feature-004/`
 
 ## Feature 005 — Champion and challenger decision report
 

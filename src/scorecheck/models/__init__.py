@@ -171,7 +171,10 @@ def _one_class_frame(application_id: np.ndarray, label: np.ndarray) -> pd.DataFr
     return _scores_frame(application_id, columns)
 
 
-def _fit_challengers(matrix: pd.DataFrame, label: np.ndarray, seed: int) -> dict[str, np.ndarray]:
+def _fit_challengers(
+    matrix: pd.DataFrame, label: np.ndarray, seed: int, score_matrix: pd.DataFrame | None = None
+) -> dict[str, np.ndarray]:
+    """Fit the seven lines on ``matrix`` and ``label``; predict on ``score_matrix`` when given."""
     import lightgbm
     import sklearn.ensemble
     import sklearn.linear_model
@@ -184,22 +187,27 @@ def _fit_challengers(matrix: pd.DataFrame, label: np.ndarray, seed: int) -> dict
     scorecard_seed = int(streams("scorecard").integers(0, 2**31))
     data = np.ascontiguousarray(matrix.to_numpy(dtype=np.float64))
     label = np.asarray(label)
+    score_data = None if score_matrix is None else np.ascontiguousarray(score_matrix.to_numpy(dtype=np.float64))
     return {
-        "lightgbm": _lightgbm_probability(lightgbm, data, label, lightgbm_seed, monotone=False),
-        "lightgbm_monotone": _lightgbm_probability(lightgbm, data, label, lightgbm_seed, monotone=True),
-        "xgboost": _xgboost_probability(xgboost, data, label, xgboost_seed, monotone=False),
-        "xgboost_monotone": _xgboost_probability(xgboost, data, label, xgboost_seed, monotone=True),
+        "lightgbm": _lightgbm_probability(lightgbm, data, label, lightgbm_seed, monotone=False, score_data=score_data),
+        "lightgbm_monotone": _lightgbm_probability(
+            lightgbm, data, label, lightgbm_seed, monotone=True, score_data=score_data
+        ),
+        "xgboost": _xgboost_probability(xgboost, data, label, xgboost_seed, monotone=False, score_data=score_data),
+        "xgboost_monotone": _xgboost_probability(
+            xgboost, data, label, xgboost_seed, monotone=True, score_data=score_data
+        ),
         "hist_gradient_boosting": _histogram_probability(
-            sklearn.ensemble, data, label, histogram_seed, monotone=False
+            sklearn.ensemble, data, label, histogram_seed, monotone=False, score_data=score_data
         ),
         "hist_gradient_boosting_monotone": _histogram_probability(
-            sklearn.ensemble, data, label, histogram_seed, monotone=True
+            sklearn.ensemble, data, label, histogram_seed, monotone=True, score_data=score_data
         ),
-        **_scorecard(sklearn.linear_model, matrix, label, scorecard_seed),
+        **_scorecard(sklearn.linear_model, matrix, label, scorecard_seed, score_matrix=score_matrix),
     }
 
 
-def _lightgbm_probability(lightgbm, data, label, seed: int, monotone: bool) -> np.ndarray:
+def _lightgbm_probability(lightgbm, data, label, seed: int, monotone: bool, score_data=None) -> np.ndarray:
     params = {
         "objective": "binary",
         "deterministic": True,
@@ -222,11 +230,11 @@ def _lightgbm_probability(lightgbm, data, label, seed: int, monotone: bool) -> n
         params["monotone_constraints_method"] = "advanced"
     dataset = lightgbm.Dataset(data, label=np.asarray(label, dtype=np.float64))
     booster = lightgbm.train(params, dataset, num_boost_round=40)
-    predicted = booster.predict(data)
+    predicted = booster.predict(data if score_data is None else score_data)
     return np.clip(np.asarray(predicted, dtype=np.float64), 0.0, 1.0)
 
 
-def _xgboost_probability(xgboost, data, label, seed: int, monotone: bool) -> np.ndarray:
+def _xgboost_probability(xgboost, data, label, seed: int, monotone: bool, score_data=None) -> np.ndarray:
     model = xgboost.XGBClassifier(
         n_estimators=40,
         learning_rate=0.1,
@@ -242,10 +250,12 @@ def _xgboost_probability(xgboost, data, label, seed: int, monotone: bool) -> np.
         monotone_constraints=None if not monotone else tuple(int(value) for value in _CONSTRAINTS),
     )
     model.fit(data, label)
-    return _positive_class(model, data)
+    return _positive_class(model, data if score_data is None else score_data)
 
 
-def _histogram_probability(ensemble, data, label, seed: int, monotone: bool) -> np.ndarray:
+def _histogram_probability(
+    ensemble, data, label, seed: int, monotone: bool, score_data=None
+) -> np.ndarray:
     model = ensemble.HistGradientBoostingClassifier(
         loss="log_loss",
         learning_rate=0.1,
@@ -262,10 +272,12 @@ def _histogram_probability(ensemble, data, label, seed: int, monotone: bool) -> 
         monotonic_cst=None if not monotone else tuple(int(value) for value in _CONSTRAINTS),
     )
     model.fit(data, label)
-    return _positive_class(model, data)
+    return _positive_class(model, data if score_data is None else score_data)
 
 
-def _scorecard(linear_model, matrix: pd.DataFrame, label: np.ndarray, seed: int) -> dict[str, np.ndarray]:
+def _scorecard(
+    linear_model, matrix: pd.DataFrame, label: np.ndarray, seed: int, score_matrix: pd.DataFrame | None = None
+) -> dict[str, np.ndarray]:
     columns = []
     for name in MATRIX_COLUMNS:
         columns.append(
@@ -278,7 +290,21 @@ def _scorecard(linear_model, matrix: pd.DataFrame, label: np.ndarray, seed: int)
     woe = np.column_stack(columns)
     model = linear_model.LogisticRegression(C=1.0, solver="lbfgs", max_iter=500, random_state=seed)
     model.fit(woe, label)
-    probability = _positive_class(model, woe)
+    if score_matrix is None:
+        scored = woe
+    else:
+        from scorecheck.models import regime
+
+        scored = np.column_stack([
+            regime.woe_transform(
+                matrix[name].to_numpy(dtype=np.float64),
+                label,
+                name in MONOTONE_COLUMNS,
+                score_matrix[name].to_numpy(dtype=np.float64),
+            )
+            for name in MATRIX_COLUMNS
+        ])
+    probability = _positive_class(model, scored)
     points = np.asarray([points_to_double_the_odds(value) for value in probability], dtype=np.float64)
     return {"scorecard_probability": probability, "scorecard_points": points}
 

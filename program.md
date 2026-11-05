@@ -78,3 +78,5 @@ Post each review verdict on the feature's PR before locking or merging, so the r
 ## Learned rules
 
 <!-- auto-loop may append below this line after the user confirms. Do not edit anything above. -->
+
+- A numeric cutoff fixed on one model's score scale does not carry to a refit model. When a feature refits a model that feeds a cutoff, measure the decline share per window on the real book before locking, and ask the human whether the cutoff stays fixed or is re-pinned. (Feature 004: a fixed 0.0185 declined 58% of applicants once the vendor was refit.)

@@ -52,6 +52,12 @@ class RunConfig:
         return cls(seed=int(data["seed"]), n_households=int(data["n_households"]))
 
 
+def experiment_dir(run_dir: Path) -> Path:
+    """Where the Feature 004 experiment writes for this run, a sibling of the vendor and models folders."""
+    run_dir = Path(run_dir)
+    return run_dir.parent.with_name("experiment") / run_dir.name
+
+
 def write_run(data_dir: Path, run: RunConfig, tables: Mapping[TableSpec, pd.DataFrame]) -> Path:
     """Write exactly PANEL_FILES into data_dir/<run id>/, replacing any earlier run with that id.
 

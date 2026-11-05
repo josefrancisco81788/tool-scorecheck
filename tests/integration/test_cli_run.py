@@ -78,6 +78,30 @@ def test_cli_default_run(tmp_path):
     assert len(set(codes)) == 3
     assert all(isinstance(code, ReasonCode) for code in codes)
 
+    experiment = tmp_path / "data" / "experiment" / run_id
+    assert {p.name for p in experiment.iterdir()} == {
+        "curves.parquet", "outcomes.parquet", "fits.parquet", "heldout_scores.parquet", "hypothesis.txt",
+        "vendor_only", "data_owner",
+    }
+    curves = pd.read_parquet(experiment / "curves.parquet")
+    assert len(curves) == 84
+    assert curves[["auc_gap", "auc_gap_low", "auc_gap_high", "vendor_fit_n", "line_fit_n", "holdout_n"]].notna().all().all()
+    outcomes = pd.read_parquet(experiment / "outcomes.parquet")
+    last = outcomes[(outcomes["regime"] == "data_owner") & (outcomes["checkpoint"] == 24)]
+    cutoff_declined = (last["on_book"] & ~last["approved"]).sum() + last["test_cell"].sum()
+    assert 0.15 <= cutoff_declined / len(last) <= 0.25
+    assert last["test_cell"].sum() > 0
+    declined_now = (~last["approved"]) | last["test_cell"]
+    window = (last["origination_month"] + 3) // 4
+    for number in sorted(window.unique()):
+        rows = window == number
+        if rows.sum() >= 100:
+            assert 0.15 <= declined_now[rows].mean() <= 0.25, (number, declined_now[rows].mean())
+    print("test cell size", int(last["test_cell"].sum()), "cutoffs", sorted(last["cutoff"].dropna().unique()))
+    for regime in ("vendor_only", "data_owner"):
+        assert {p.name for p in (experiment / regime).iterdir()} == {"ledger.parquet", "bind.json", "challengers"}
+    assert (experiment / "hypothesis.txt").read_text(encoding="utf-8").endswith("\n")
+
     run_config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
     assert run_config["scale"] == "default"
     assert run_config["n_households"] == 50000
