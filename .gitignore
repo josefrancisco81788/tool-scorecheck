@@ -13,3 +13,6 @@ data/processed/
 .pytest_cache/
 .coverage
 .DS_Store
+data/experiment/
+data/models/
+data/vendor/
