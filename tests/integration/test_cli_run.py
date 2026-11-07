@@ -81,7 +81,7 @@ def test_cli_default_run(tmp_path):
     experiment = tmp_path / "data" / "experiment" / run_id
     assert {p.name for p in experiment.iterdir()} == {
         "curves.parquet", "outcomes.parquet", "fits.parquet", "heldout_scores.parquet", "hypothesis.txt",
-        "vendor_only", "data_owner",
+        "vendor_only", "data_owner", "report",
     }
     curves = pd.read_parquet(experiment / "curves.parquet")
     assert len(curves) == 84
@@ -101,6 +101,14 @@ def test_cli_default_run(tmp_path):
     for regime in ("vendor_only", "data_owner"):
         assert {p.name for p in (experiment / regime).iterdir()} == {"ledger.parquet", "bind.json", "challengers"}
     assert (experiment / "hypothesis.txt").read_text(encoding="utf-8").endswith("\n")
+    report = experiment / "report"
+    assert {p.name for p in report.iterdir()} == {
+        "lift_by_group.csv", "phased_switch.csv", "swap_sets.csv", "equal_approval.csv", "full_lines.csv",
+        "summary.md",
+    }
+    assert "60%" in (report / "summary.md").read_text(encoding="utf-8")
+    assert len(pd.read_csv(report / "phased_switch.csv")) == 2 * 3 * 4
+    assert len(pd.read_csv(report / "equal_approval.csv")) == 2 * 3 * 8
 
     run_config = json.loads((run_dir / "run_config.json").read_text(encoding="utf-8"))
     assert run_config["scale"] == "default"

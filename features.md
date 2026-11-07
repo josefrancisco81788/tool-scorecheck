@@ -55,14 +55,16 @@ Results: `results/feature-004/`
 
 ## Feature 005 — Champion and challenger decision report
 
-Status: Checks locked
+Status: Complete
 
 Requirements:
 - Given vendor and challenger scores with outcomes, when the report is generated, then it shows by segment and by length of behavioural history (thin-file versus thick-file) where the vendor still adds lift, where the challenger has caught up, and what a phased switch would cost in approval rate and expected loss
 - A swap-set analysis: which applicants the challenger would approve that the champion declines (swap-ins) and the reverse (swap-outs), with the size and bad rate of each group. Swap-in risk uses the Feature 004 test-cell outcomes where they exist
 - Bad rate and expected loss at an equal approval rate: with the approval rate held the same, how many fewer defaults, or how much lower expected loss, the challenger delivers. AUC alone is not the decision
 
-Checks: not written
+Checks: locked in `checks/approved/feature-005.md`. Engineering choices: `docs/choices/feature-005.md`
+
+Results: `results/feature-005/`
 
 ## Feature 006 — Lender validation pack
 

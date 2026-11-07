@@ -50,3 +50,12 @@ Test kinds from `docs/testing-standards.md`: unit, golden, eval (same-machine re
 ## Change log
 
 - 2026-11-05: Draft written after measuring the default book and the user's answers (thin = 6 months or less, 60% loss-given-default, scorecard named, both cutoff views).
+- 2026-11-07: Built. Changes from the draft:
+  - Added a `segment` named `all` (whole holdout) and used `history` for the thin or thick segment; both are rows in `lift_by_group.csv`.
+  - `phased_switch.csv` carries the scorecard only; the other six lines appear in `full_lines.csv` (lift, equal-approval gap, swap-in and swap-out sizes and bad rates) and in `equal_approval.csv`.
+  - `swap_sets.csv` also lists the two groups both models agree on (`both_approve`, `both_decline`) for context, plus a `test_cell` row with a Wilson 95% interval. The test cell uses only accounts with a matured 6-month outcome.
+  - Phased-switch subset: one `Streams(seed, "report")("phased_switch")` uniform draw per holdout applicant (in `application_id` order); the lowest `round(share x n)` draws go to the challenger, so the subsets nest (25% inside 50% and so on). Why: deterministic and needs no extra hashing.
+  - Tables are rounded to six places before writing and CSVs use LF line endings, so repeat runs are byte-equal. Why: R8 compares files.
+  - Golden: `tests/fixtures/golden/report_2000.json` holds headline numbers (exact counts, rates to 1e-6) rather than a file hash, so a library patch version does not break it. Changelog line added.
+  - Test plan: added `tests/support/report.py` (hand fixtures) and a `report_2000` session fixture in `tests/conftest.py`; `tests/unit/test_report_golden.py` and `tests/evals/test_report_repeat.py` as planned.
+  - Finding, reported as it came out: on the default book the vendor leads the scorecard overall (AUC 0.797 against 0.746) and in 29 of 32 groups; the scorecard has caught up in three regions (Central Visayas, Eastern Visayas, Northern Mindanao); no group has the challenger ahead. A full switch at the same cutoff approves more and loses more. At an equal 80% approval rate the scorecard lets in 141 more defaults and 24.5% more expected loss than the vendor.
