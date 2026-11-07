@@ -55,7 +55,7 @@ Results: `results/feature-004/`
 
 ## Feature 005 — Champion and challenger decision report
 
-Status: Not started
+Status: Checks locked
 
 Requirements:
 - Given vendor and challenger scores with outcomes, when the report is generated, then it shows by segment and by length of behavioural history (thin-file versus thick-file) where the vendor still adds lift, where the challenger has caught up, and what a phased switch would cost in approval rate and expected loss
