@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
-from scorecheck import config, experiment, features, models, panel, vendor
+from scorecheck import config, experiment, features, models, panel, report, vendor
 
 DATA_ROOT = Path("data/processed")
 STAGES: tuple[str, ...] = ("vendor", "models", "experiment", "report", "validate", "explain")
@@ -36,6 +36,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     vendor.publish(run_dir)
     models.publish(run_dir)
     experiment.run(run_dir)
+    report.run(run_dir)
     for stage in STAGES:
         print(stage)
     return 0

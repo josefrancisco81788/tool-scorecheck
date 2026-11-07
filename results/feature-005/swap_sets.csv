@@ -1,0 +1,11 @@
+regime,line,source,group,meaning,approval_rate,n,bads,bad_rate,bad_rate_low,bad_rate_high,expected_loss
+data_owner,scorecard_probability,holdout_outcomes,swap_in,"challenger approves, vendor declines",0.8,1116,229,0.205197,0.182533,0.229883,14216100.0
+data_owner,scorecard_probability,holdout_outcomes,swap_out,"vendor approves, challenger declines",0.8,1116,88,0.078853,0.064447,0.096149,4840620.0
+data_owner,scorecard_probability,holdout_outcomes,both_approve,both approve,0.8,12858,586,0.045575,0.042103,0.049317,33482640.0
+data_owner,scorecard_probability,holdout_outcomes,both_decline,both decline,0.8,2377,674,0.283551,0.265792,0.302008,38292300.0
+data_owner,,test_cell_outcomes,test_cell,"vendor-declined applicants approved at random (Feature 004); 717 in the cell, 717 with a matured 6-month outcome. A cross-check on the declined population, not a score of the same people",,717,156,0.217573,0.18892,0.249236,
+vendor_only,scorecard_probability,holdout_outcomes,swap_in,"challenger approves, vendor declines",0.8,1133,226,0.19947,0.177235,0.223737,12492780.0
+vendor_only,scorecard_probability,holdout_outcomes,swap_out,"vendor approves, challenger declines",0.8,1133,84,0.074139,0.060281,0.090876,5005920.0
+vendor_only,scorecard_probability,holdout_outcomes,both_approve,both approve,0.8,12841,590,0.045947,0.042459,0.049706,33317340.0
+vendor_only,scorecard_probability,holdout_outcomes,both_decline,both decline,0.8,2360,677,0.286864,0.268974,0.305448,40015620.0
+vendor_only,,test_cell_outcomes,test_cell,"vendor-declined applicants approved at random (Feature 004); 717 in the cell, 717 with a matured 6-month outcome. A cross-check on the declined population, not a score of the same people",,717,156,0.217573,0.18892,0.249236,

@@ -1,0 +1,91 @@
+{
+  "lift": [
+    {
+      "segment": "all",
+      "group": "all",
+      "n": 698,
+      "bads": 69,
+      "vendor_auc": 0.75883,
+      "challenger_auc": 0.688878,
+      "auc_lift": 0.069952,
+      "verdict": "vendor leads"
+    },
+    {
+      "segment": "history",
+      "group": "thick",
+      "n": 440,
+      "bads": 40,
+      "vendor_auc": 0.791875,
+      "challenger_auc": 0.7065,
+      "auc_lift": 0.085375,
+      "verdict": "vendor leads"
+    },
+    {
+      "segment": "history",
+      "group": "thin",
+      "n": 258,
+      "bads": 29,
+      "vendor_auc": 0.722783,
+      "challenger_auc": 0.6624,
+      "auc_lift": 0.060382,
+      "verdict": "caught up"
+    }
+  ],
+  "equal_approval_80": [
+    {
+      "model": "vendor",
+      "approved": 558,
+      "approved_bads": 34,
+      "expected_loss": 2350800.0
+    },
+    {
+      "model": "scorecard_probability",
+      "approved": 558,
+      "approved_bads": 35,
+      "expected_loss": 1928040.0
+    }
+  ],
+  "phased_switch_cutoff_0.10": [
+    {
+      "switch_share": 0.5,
+      "approved": 546,
+      "approved_bads": 31,
+      "expected_loss": 1736280.0,
+      "expected_loss_delta": -183720.0
+    },
+    {
+      "switch_share": 1.0,
+      "approved": 564,
+      "approved_bads": 35,
+      "expected_loss": 1928040.0,
+      "expected_loss_delta": 8040.0
+    }
+  ],
+  "swap_sets": [
+    {
+      "group": "swap_in",
+      "n": 71,
+      "bads": 13
+    },
+    {
+      "group": "swap_out",
+      "n": 71,
+      "bads": 12
+    },
+    {
+      "group": "both_approve",
+      "n": 487,
+      "bads": 22
+    },
+    {
+      "group": "both_decline",
+      "n": 69,
+      "bads": 22
+    },
+    {
+      "group": "test_cell",
+      "n": 27,
+      "bads": 8
+    }
+  ]
+}

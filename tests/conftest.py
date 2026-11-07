@@ -19,3 +19,10 @@ def experiment_2000(run_2000, tmp_path_factory):
     from support.experiment import prepare
 
     return prepare(run_2000.run_dir, tmp_path_factory.mktemp("exp2000"))
+
+
+@pytest.fixture(scope="session")
+def report_2000(experiment_2000):
+    from scorecheck import report
+
+    return report.run(experiment_2000.run_dir)
