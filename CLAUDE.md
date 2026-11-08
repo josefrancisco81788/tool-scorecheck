@@ -32,8 +32,9 @@ _(empty at bootstrap — Stage 5 Session 0 dry-run should populate this with rea
 - `scope.template.md` — explicit non-goals / scope boundaries
 - `features.md` — one feature per build loop
 - `program.md` — what the feature loop may and may not change
+- `docs/linear-conventions.md` — what goes where in Linear, and who updates it
 - `.cursor/skills/` and `.claude/skills/` — project-context, build, write-checks, feature-builder, auto-loop
 
 ## Agent loop
 
-Build one feature at a time. Ask the human only product questions, in plain words with a recommendation; make engineering choices yourself and log them in `docs/choices/<feature-id>.md` (see `program.md` "Who decides what" and "When to stop and ask"). Checks are written and human-approved before implementation, then locked with `python scripts/lock_checks.py`. Do not edit `checks/approved/` or the check scripts. `python scripts/verify_checks.py` must pass before a feature is done, and the user-facing behavior still has to exist and be wired into the app. Recurring mistakes are appended to `program.md` Learned rules after a human confirms them. Same skills are installed for Cursor and Claude Code; if you edit one copy, edit the other.
+Build one feature at a time. Ask the human only product questions, in plain words with a recommendation; make engineering choices yourself and log them in `docs/choices/<feature-id>.md` (see `program.md` "Who decides what" and "When to stop and ask"). Checks are written and human-approved before implementation, then locked with `python scripts/lock_checks.py`. Do not edit `checks/approved/` or the check scripts. `python scripts/verify_checks.py` must pass before a feature is done, and the user-facing behavior still has to exist and be wired into the app. Recurring mistakes are appended to `program.md` Learned rules after a human confirms them. Same skills are installed for Cursor and Claude Code; if you edit one copy, edit the other. Update Linear only as `docs/linear-conventions.md` describes: the repo is the source of truth, status reaches Linear through PR links and one project update per finished feature.
