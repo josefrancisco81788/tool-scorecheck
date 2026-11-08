@@ -15,3 +15,4 @@ alwaysApply: true
 - Record every round under `results/<feature-id>/`.
 - Recurring mistakes become confirmed rules under `program.md` Learned rules. They never become edits to approved checks.
 - Treat 3 check revision rounds without approval, or 2 hours without a lock, passing round, or merge, as blocked: tell the user in plain words what is unresolved (see `program.md` "When to stop and ask").
+- Update Linear only as `docs/linear-conventions.md` describes. The repo is the source of truth; put the Linear issue key in the branch name or PR title, and post one project update per merged feature instead of editing descriptions.

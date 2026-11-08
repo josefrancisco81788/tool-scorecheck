@@ -88,4 +88,6 @@ Update `features.md` status to `Complete` and point at the results folder.
 
 Update the project-context skill's `references/project.md` with what this feature settled: the test command, where new modules live, dependencies added, conventions adopted, and any change to architecture or non-goals. Make the identical edit in both `.claude/skills/` and `.cursor/skills/`. If nothing changed, say so in the results file.
 
+Update Linear as `docs/linear-conventions.md` describes: the merged PR moves the feature issue, and one project update records the findings and the PR link. Delegate this to a Haiku subagent. Do not edit Linear descriptions for status.
+
 Then use the auto-loop skill before starting another feature.
