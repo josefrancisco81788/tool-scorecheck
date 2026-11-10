@@ -20,7 +20,7 @@ Applies to the ScoreCheck project in Linear (team JOS). Adopted 8 Nov 2026; the 
 
 ## Who updates Linear, and when
 
-- **Status moves through GitHub.** Put the issue key in the branch name or the PR title (for example, `JOS-28`), so a linked PR moves the issue. An agent sets a feature issue to In Progress by hand only when work starts before a PR exists. A merged PR with the key in its title closes the issue, so a PR that finishes only part of an issue leaves the key out of the title and says "Part of JOS-NNN" in the body.
+- **Status moves through GitHub.** Put the issue key in the branch name or the PR title (for example, `JOS-28`), so a linked PR moves the issue. An agent sets a feature issue to In Progress by hand only when work starts before a PR exists. In this workspace, merging any PR that mentions an issue key closes that issue, even with "Part of". So a PR that finishes only part of an issue does not mention the key anywhere (branch name, title, or body). After it merges, add a comment on the issue with the PR link.
 - **After a merge,** post one project update (findings plus the PR link). Do not edit descriptions to report status.
 - **One fact, one place.** Link to it; never copy the same fact into a second Linear item.
 - **Linear edits are mechanical.** Agents delegate them to a Haiku subagent.
