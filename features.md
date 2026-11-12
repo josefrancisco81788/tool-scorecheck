@@ -89,3 +89,15 @@ Requirements:
 
 Checks: not written
 
+## Feature 008 — Performance estimate before outcomes mature
+
+Status: Not started
+
+Requirements:
+- Given scores from both models and only the outcomes each regime has observed so far, when the estimator runs at each Feature 004 checkpoint, then it estimates ranking and bad rate for the applicants whose 6-month outcomes have not matured yet, and the report compares each estimate with the realised value once those outcomes arrive
+- The estimate uses calibrated default probabilities. The vendor score is mapped to a probability using observed outcomes only. The vendor model is reached through its score API and nothing else
+- The report states each regime's blind time: how many months a lender in that regime waits before it can measure the model directly
+- Under the year-two shift the estimate is expected to drift from the realised value, because the method assumes the link between score and default does not change. The report shows that gap and does not tune it away
+- Builds after Feature 006, whose segment calibration it reuses. It does not depend on Feature 007
+
+Checks: not written
