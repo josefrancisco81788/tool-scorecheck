@@ -4,6 +4,8 @@ Applies to the ScoreCheck project in Linear (team JOS). Adopted 8 Nov 2026; the 
 
 **The repo is the source of truth.** Linear is for navigation, status, and the audit trail. Where Linear and the repo disagree, the repo wins.
 
+For ScoreCheck, this file overrides the global `linear-project-conventions` skill wherever the two differ.
+
 ## What goes where
 
 | Place | Holds | Never holds |
@@ -12,6 +14,7 @@ Applies to the ScoreCheck project in Linear (team JOS). Adopted 8 Nov 2026; the 
 | Milestones | One per feature. A target date when known. An empty or one-line description. Progress comes from their issues | Specs, constants, findings, status narrative |
 | Feature issue | One per feature. A one-line outcome, links to the spec (the `features.md` section, `checks/approved/feature-NNN.md`, `docs/choices/feature-NNN.md`), and a "Done when" checklist | Results, history, copied requirements |
 | Sub-issues | Created when a feature starts: product questions, checks (draft and lock), and build. Only when the feature needs that split | Pre-made placeholders for features that have not started |
+| Non-feature issue | Work that is not a feature and is not already tracked elsewhere. The `Improvement` or `Bug` label, no milestone, and priority unset unless the owner sets it. A one-line outcome, links to the repo, and a "Done when" checklist | Specs, copied repo facts |
 | Relations | The `blocks` chain between features in build order | — |
 | Labels | `Feature` on feature issues. `Bug` and `Improvement` as named | — |
 | Project updates | One dated update per merged feature or blocking event, with health set: the findings in a few lines and the PR link. **The only place for results and status narrative** | Specs |
@@ -23,6 +26,7 @@ Applies to the ScoreCheck project in Linear (team JOS). Adopted 8 Nov 2026; the 
 - **Status moves through GitHub.** Put the issue key in the branch name or the PR title (for example, `JOS-28`), so a linked PR moves the issue. An agent sets a feature issue to In Progress by hand only when work starts before a PR exists. In this workspace, merging any PR that mentions an issue key closes that issue, even with "Part of". So a PR that finishes only part of an issue does not mention the key anywhere (branch name, title, or body). After it merges, add a comment on the issue with the PR link.
 - **After a merge,** post one project update (findings plus the PR link). Do not edit descriptions to report status.
 - **One fact, one place.** Link to it; never copy the same fact into a second Linear item.
+- **Already tracked? Add to it.** Before creating an issue, search for one that already tracks the work, including checklist items inside other issues. If one exists, add a comment or a checklist item there instead of opening a new issue.
 - **Linear edits are mechanical.** Agents delegate them to a Haiku subagent.
 - **Destructive edits need the user's OK.** That covers deleting text, milestones, documents, or issues. Copy the content into a project update or the repo first.
 - **New conventions** change this file in a PR. The Linear document only summarises it.
