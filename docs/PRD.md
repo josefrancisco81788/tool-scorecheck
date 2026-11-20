@@ -48,6 +48,7 @@ Stretch Goals
 - [ ] One-page note "Owning the outcomes" for the Ray Espinosa introduction, written before any code (outside the repo)
 - [ ] Five named recognition targets, two approached (Notion DoD, outside the repo)
 - [ ] Productionize per the AI-engineer roadmap: API, Docker, CI/CD, logging, cost and latency tracking
+- [ ] Feature: Performance estimate before outcomes mature — Given scores from both models and only the outcomes each regime has observed so far, When the estimator runs at each outcomes-experiment checkpoint, Then it estimates ranking and bad rate for applicants whose outcomes have not matured, reports each regime's blind time, and compares each estimate with the realised value once outcomes arrive (`features.md` Feature 008)
 
 Non-Goals
 - [ ] MSME or firm-level credit scoring
